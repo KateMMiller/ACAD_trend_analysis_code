@@ -23,7 +23,7 @@ vmmi <- left_join(vmmi1,
          Invasive_Cover, Cover_Tolerant, vmmi, vmmi_rating, vmmi_rating_orig, FWS_Class_Code, HGM_Class)
 
 # Great Meadow RAM data
-loc_grme <- read.csv("./data/ACAD_data/locations.csv") |> select(Code, FWS_Class_Code, HGM_Class)
+loc_grme <- read.csv("./data/ACAD_data/FOA_veg_data_package_2025/locations.csv") |> select(Code, FWS_Class_Code, HGM_Class)
 vmmi_grme1 <- read.csv("./data/ACAD_data/ACAD_Wetland_VegMMI_20260126.csv")
 
 vmmi_grme <- left_join(vmmi_grme1,
