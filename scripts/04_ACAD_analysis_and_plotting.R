@@ -8,8 +8,9 @@ library(patchwork)
 
 vmmi_comb <- read.csv("./data/ACAD_data/Vegetation_MMI_COW_2011-2025_ACAD_RAM_SENT_GRME.csv") |>
   mutate(site_type = ifelse(Panel == 0, "SENT", "RAM"))
-head(vmmi_comb)
+names(vmmi_comb)
 
+# Split out ACAD sites for analysis and plotting
 vmmi_ram <- vmmi_comb |> filter(grepl("R-", Code))
 vmmi_grme <- vmmi_comb |> filter(grepl("GR", Code))
 
@@ -320,7 +321,7 @@ ggsave("./results/VMMI_distribution_site_type_ACAD_EPA.png", height = 4, width =
 
 #--- Number of stressors vs VMMI ---
 head(vmmi_comb)
-buff_all <- read.csv("./results/Stressor_Counts_NWCAPROB_ACAD_GRME_most_recent_REF.csv")
+buff_all <- read.csv("./results/Stressor_Counts_NWCA_PROB_ACAD_GRME_most_recent_REF.csv")
 head(buff_all)
 table(buff_all$site_type, useNA = 'always')
 

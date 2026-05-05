@@ -93,6 +93,38 @@ spplist_check # no species differences in COCs between NETN database and EPA CoC
 write.csv(vmmi, "./data/ACAD_data/Vegetation_MMI_2011-2025_ACAD_RAM.csv", row.names = F)
 write.csv(vmmi_comb, "./data/ACAD_data/Vegetation_MMI_2011-2025_ACAD_RAM_SENT_GRME.csv", row.names = F)
 
+vmmi_sf <- st_as_sf(vmmi_comb, coords = c("X", "Y"), crs = 26919)
+vmmi_sf_dd83 <- st_transform(vmmi_sf, crs = 4269)
+vmmi_dd83_crds <- data.frame(
+  Code = vmmi_comb$Code,
+  Year = vmmi_comb$Year,
+  LAT_DD83 = st_coordinates(vmmi_sf_dd83)[,1],
+  LON_DD83 = st_coordinates(vmmi_sf_dd83)[,2]
+  )
+
+vmmi_comb2 <- left_join(vmmi_comb, vmmi_dd83_crds, by = c("Code", "Year")) |>
+  mutate(site_type = case_when(Panel == 0 ~ "ACAD Sent.",
+                               Panel > 0 & grepl("R-", Code) ~ "ACAD RAM",
+                               Panel == -1 & grepl("GR", Code) ~ "ACAD GRME",
+                               Panel == -1 & grepl("GIME", Code) ~ "ACAD GILM",
+                               ))
+
+# Read in EPA VMMI data and save combined results into results folder
+names(vmmi_comb2)
+vmmi_nwca1 <- read.csv("./data/EPA_compiled/Vegetation_MMI_2011-2021_EPA_allsites.csv") |>
+  mutate(Panel = NA_real_) |>
+  select(Code = UID, Panel, LAT_DD83, LON_DD83, Year = YEAR,
+         HGM_Class, site_type = site_type2,
+         meanC, Bryophyte_Cover = bryo_cov, Invasive_Cover = inv_cov,
+         Cover_Tolerant = disttol_cov, vmmi, vmmi_rating)
+
+vmmi_comb3 <- vmmi_comb2[,names(vmmi_nwca1)]
+
+vmmi_all <- rbind(vmmi_comb3, vmmi_nwca1) |> filter(!site_type %in% "OTH")
+
+write.csv(vmmi_all, "./results/VegetationMMI_NWCA_PROB_ACAD_GRME_most_recent_REF.csv",
+          row.names = F)
+
 # Coefficient of Wetness
 # RAM
 spp_ram <- left_join(VIEWS_RAM$species_list,
@@ -268,5 +300,5 @@ stress_all <- stress_all |>
                           grepl("ME-HP310", Code) ~ "FRAZ",
                           TRUE ~ Code))
 
-write.csv(stress_all, "./results/Stressor_Counts_NWCAPROB_ACAD_GRME_most_recent_REF.csv",
+write.csv(stress_all, "./results/Stressor_Counts_NWCA_PROB_ACAD_GRME_most_recent_REF.csv",
           row.names = F)
