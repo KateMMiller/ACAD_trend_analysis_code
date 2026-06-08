@@ -10,16 +10,17 @@ library(sf)
 
 # Combine RAM data from database and SENT data compiled from EPA NWCA sources
 # NETN RAM data
+
 importRAM(type = 'zip',
-          filepath = "./data/ACAD_data/NETN_Wetland_RAM_Data_20260428_NPSonly.zip")
+          filepath = "./data/ACAD_data/NETN_Wetland_RAM_Data_20260608_NPSonly.zip")
 
 # Calc vegetation MMI from RAM data in ACAD
 vmmi1 <- sumVegMMI()
 loc <- VIEWS_RAM$locations
 vmmi <- left_join(vmmi1,
-                  loc |> select(Code, FWS_Class_Code, HGM_Class, HGM_Sub_Class),
-                  by = "Code") |>
-  select(Code, Panel, X = xCoordinate, Y = yCoordinate, Year, meanC, Bryophyte_Cover,
+                  loc |> select(SiteCode, FWS_Class_Code, HGM_Class, HGM_Sub_Class),
+                  by = "SiteCode") |>
+  select(Code = SiteCode, Panel, X = xCoordinate, Y = yCoordinate, Year, meanC, Bryophyte_Cover,
          Invasive_Cover, Cover_Tolerant, vmmi, vmmi_rating, vmmi_rating_orig, FWS_Class_Code, HGM_Class)
 
 # Great Meadow RAM data
@@ -66,8 +67,8 @@ vmmi_comb <- rbind(vmmi, vmmi_grme, vmmi_sent3)
 
 # Check that COCs match between NETN and EPA analyses
 # Only interested in species that have been found in ACAD.
-ramspp <- VIEWS_RAM$species_list |> select(Latin_Name, PLANTS_Code, CoC_ME_ACAD) |> distinct()
-spplist <- VIEWS_RAM$tlu_Plant |> select(Latin_Name, PLANTS_Code, CoC_ME_ACAD)
+ramspp <- VIEWS_RAM$species_list |> select(Latin_Name = ScientificName, PLANTS_Code, CoC_ME_ACAD) |> distinct()
+spplist <- VIEWS_RAM$tlu_Plant |> select(Latin_Name = ScientificName, PLANTS_Code, CoC_ME_ACAD)
 
 sent_veg <- read.csv("./data/EPA_compiled/Plant_Cover_2011-2021.csv")
 
@@ -131,7 +132,7 @@ spp_ram <- left_join(VIEWS_RAM$species_list,
                      VIEWS_RAM$tlu_Plant[,c("TSN", "Coef_wetness")],
                      by = "TSN")
 
-cow_ram <- spp_ram |> group_by(Code, Year) |>
+cow_ram <- spp_ram |> group_by(Code = SiteCode, Year) |>
   summarize(mean_wet = mean(Coef_wetness, na.rm = T),
             .groups = "drop")
 
@@ -179,8 +180,8 @@ vmmi_sf <- st_as_sf(vmmi_cow_comb, coords = c("X", "Y"), crs = 26919)
 st_write(vmmi_sf, "./data/ACAD_data/Vegetation_MMI_COW_2011-2025_ACAD_RAM_SENT_GRME.shp")
 
 # Compile Stressors
-locev1 <- left_join(VIEWS_RAM$locations |> select(Code, FWS_Class_Code, HGM_Class, HGM_Sub_Class),
-                    VIEWS_RAM$visits |> select(Code, Year, Visit_Type),
+locev1 <- left_join(VIEWS_RAM$locations |> select(Code = SiteCode, FWS_Class_Code, HGM_Class, HGM_Sub_Class),
+                    VIEWS_RAM$visits |> select(Code = SiteCode, Year, Visit_Type),
                     by = "Code") |>
   filter(Visit_Type == "VS")
 
@@ -205,7 +206,11 @@ locev <- rbind(locev1, locev_gm)
 # -- 2. Clean up deer impacts. There are 2 places they show up and we haven't
 #       been consistent on when we use either or across years.
 
-visits <- rbind(VIEWS_RAM$visits, grme_visits)
+visits2 <- VIEWS_RAM$visits
+names(visits2)[names(visits2) == "SiteCode"] <- "Code"
+visits3 <- visits2[,names(grme_visits)]
+
+visits <- rbind(visits3, grme_visits)
 
 visits_inv <- visits |>
   filter(Visit_Type == "VS") |>
@@ -218,7 +223,10 @@ visits_inv <- visits |>
                                     TRUE ~ 3)) |>
   select(Code, Year, Location_Level, Stressor_Category, Stressor, Severity_Indiv)
 
-stress_comb <- rbind(VIEWS_RAM$RAM_stressors, grme_stress)
+stress1 <- VIEWS_RAM$RAM_stressors
+names(stress1)[names(stress1) == "SiteCode"] <- "Code"
+stress <- stress1[,names(grme_stress)]
+stress_comb <- rbind(stress, grme_stress)
 
 stress1 <- stress_comb |>
   filter(Visit_Type == "VS") |>

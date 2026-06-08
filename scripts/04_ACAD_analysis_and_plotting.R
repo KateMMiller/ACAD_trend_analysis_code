@@ -30,7 +30,8 @@ write.csv(comb_gm, "./data/ACAD_data/VMMI_GRME_vs_GILM.csv", row.names = F)
 thresh <- c(41.48136, 60.94853)
 
 theme_wet <- function(){
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
         panel.background = element_rect(color = "#696969", fill = "white",
                                         linewidth = 0.4),
         plot.background = element_blank(),
@@ -53,20 +54,26 @@ vmmi_ram$year_cen <- vmmi_ram$Year - min(vmmi_ram$Year)
 vmmi_ram$year_fac <- as.factor(vmmi_ram$year_cen)
 
 # VMMI Trends
+vmmimod_full2 <- lmer(vmmi ~ year_cen + HGM_Class + year_cen*HGM_Class + (1 + year_cen|Code) + (1|year_fac), data = vmmi_ram)
+vmmimod_full3 <- lmer(vmmi ~ year_cen*HGM_Class + (1 + year_cen|Code) + (1|year_fac), data = vmmi_ram)
+
 vmmimod_full <- lmer(vmmi ~ year_cen + HGM_Class + (1 + year_cen|Code) + (1|year_fac), data = vmmi_ram)
 vmmimod3 <- lmer(vmmi ~ HGM_Class + (1 + year_cen|Code) + (1|year_fac), data = vmmi_ram)
 vmmimod2 <- lmer(vmmi ~ year_cen + (1 + year_cen|Code) + (1|year_fac), data = vmmi_ram)
 vmmimod1 <- lmer(vmmi ~ 1 + (1 + year_cen|Code) + (1|year_fac), data = vmmi_ram)
+vmmimod_null <- lmer(vmmi ~ 1 + (1|Code), data = vmmi_ram)
 
-AIC(vmmimod1, vmmimod3, vmmimod2, vmmimod_full)
+AIC(vmmimod1, vmmimod3, vmmimod2, vmmimod_full, vmmimod_null, vmmimod_full2, vmmimod_full3)
 plot(vmmimod3)
 qqnorm(residuals(vmmimod3))
 hist(residuals(vmmimod3))
 summary(vmmimod3)
+summary(vmmimod1)
+summary(vmmimod_full2)
 tidy(vmmimod3)
 
 # Mean C trends
-meancmod_full <- lmer(meanC ~ year_cen + HGM_Class + (1 + year_cen|Code), data = vmmi_ram)
+meancmod_full <- lmer(meanC ~ year_cen*HGM_Class + (1 + year_cen|Code), data = vmmi_ram)
 meancmod3 <- lmer(meanC ~ HGM_Class + (1 + year_cen|Code), data = vmmi_ram)
 meancmod2 <- lmer(meanC ~ year_cen + (1 + year_cen|Code), data = vmmi_ram)
 meancmod1 <- lmer(meanC ~ 1 + (1 + year_cen|Code), data = vmmi_ram)
@@ -78,7 +85,7 @@ hist(residuals(meancmod3))
 summary(meancmod3)
 
 # % Bryophyte Trends
-bryomod_full <- lmer(Bryophyte_Cover ~ year_cen + HGM_Class + (1|Code), data = vmmi_ram)
+bryomod_full <- lmer(Bryophyte_Cover ~ year_cen*HGM_Class + (1|Code), data = vmmi_ram)
 bryomod3 <- lmer(Bryophyte_Cover ~ HGM_Class + (1|Code), data = vmmi_ram) # random slopes failed to converge, so rand. int.
 bryomod2 <- lmer(Bryophyte_Cover ~ year_cen + (1|Code), data = vmmi_ram)
 bryomod1 <- lmer(Bryophyte_Cover ~ 1 + (1|Code), data = vmmi_ram)
@@ -93,13 +100,13 @@ summary(bryomod3)
 tidy(bryomod3)
 
 # % Tolerant Trends
-tolmod_full <- lmer(Cover_Tolerant ~ year_cen + HGM_Class + (1 + year_cen|Code), data = vmmi_ram)
+tolmod_full <- lmer(Cover_Tolerant ~ year_cen*HGM_Class + (1 + year_cen|Code), data = vmmi_ram)
 tolmod3 <- lmer(Cover_Tolerant ~ HGM_Class + (1 + year_cen|Code), data = vmmi_ram)
 tolmod2 <- lmer(Cover_Tolerant ~ year_cen + (1 + year_cen|Code), data = vmmi_ram)
 tolmod1 <- lmer(Cover_Tolerant ~ 1 + (1 + year_cen|Code), data = vmmi_ram)
 
 anova(tolmod_full, tolmod3, tolmod2, tolmod1)
-AIC(tolmod1, tolmod3, tolmod2, tolmod_full)
+arrange(AIC(tolmod1, tolmod3, tolmod2, tolmod_full), AIC)
 plot(tolmod3)
 qqnorm(residuals(tolmod3))
 hist(residuals(tolmod3))
@@ -107,13 +114,13 @@ summary(tolmod3)
 tidy(tolmod3)
 
 # Coef of Wetness Trends
-wetmod_full <- lmer(mean_wet ~ year_cen + HGM_Class + (1|Code), data = vmmi_ram)
+wetmod_full <- lmer(mean_wet ~ year_cen*HGM_Class + (1|Code), data = vmmi_ram)
 wetmod3 <- lmer(mean_wet ~ HGM_Class + (1|Code), data = vmmi_ram)
 wetmod2 <- lmer(mean_wet ~ year_cen + (1|Code), data = vmmi_ram)
 wetmod1 <- lmer(mean_wet ~ 1 + (1|Code), data = vmmi_ram)
 
 anova(wetmod_full, wetmod3, wetmod2, wetmod1)
-AIC(wetmod1, wetmod3, wetmod2, wetmod_full)
+arrange(AIC(wetmod1, wetmod3, wetmod2, wetmod_full), AIC)
 plot(wetmod3)
 qqnorm(residuals(wetmod3))
 hist(residuals(wetmod3))
@@ -216,6 +223,8 @@ ggsave("./results/Vegetation_MMI_RAM_facet.png", height = 5, width = 6)
 
 pred_plot("meanC", "Mean C", thresh = T) + facet_wrap(~HGM_Class)
 
+pred_plot("Cover_Tolerant", "% Cover Tolerant", thresh = F) + facet_wrap(~HGM_Class)
+
 pred_plot("mean_wet", "Mean Wetness", thresh = F) + facet_wrap(~HGM_Class)
 ggsave("./results/mean_wetness_RAM_facet.png", height = 5, width = 6)
 
@@ -267,7 +276,7 @@ pred_plot2("vmmi", "Veg. MMI", yran = c(0, 100))
 pred_plot2("mean_wet", "Mean Wetness")
 # ggsave("./results/mean_wetness_RAM.png", height = 4, width = 6)
 pred_plot2("meanC", "Mean C", yran = c(2.5, 6.5))
-pred_plot2("Invasive_Cover", "% Inv. Cov", yran = c(0, 2))
+pred_plot2("Invasive_Cover", "% Inv. Cov", yran = c(0, 10))
 pred_plot2("Bryophyte_Cover", "% Bryo. Cov")
 pred_plot2("Cover_Tolerant", "% Dist. Tol.")
 
