@@ -25,7 +25,7 @@ GILM <- rbind(vmmi_ram |> filter(Code == "R-31") |> filter(Year > 2020),
   mutate(site = "GILM")
 
 comb_gm <- rbind(GRME, GILM)
-write.csv(comb_gm, "./data/ACAD_data/VMMI_GRME_vs_GILM.csv", row.names = F)
+# write.csv(comb_gm, "./data/ACAD_data/VMMI_GRME_vs_GILM.csv", row.names = F)
 
 thresh <- c(41.48136, 60.94853)
 
@@ -54,78 +54,74 @@ vmmi_ram$year_cen <- vmmi_ram$Year - min(vmmi_ram$Year)
 vmmi_ram$year_fac <- as.factor(vmmi_ram$year_cen)
 
 # VMMI Trends
-vmmimod_full2 <- lmer(vmmi ~ year_cen + HGM_Class + year_cen*HGM_Class + (1 + year_cen|Code) + (1|year_fac), data = vmmi_ram)
-vmmimod_full3 <- lmer(vmmi ~ year_cen*HGM_Class + (1 + year_cen|Code) + (1|year_fac), data = vmmi_ram)
+vmmimod_full <- lmer(vmmi ~ year_cen * HGM_Class + (1 + year_cen|Code) + (1|year_fac), data = vmmi_ram)
+vmmimod_main <- lmer(vmmi ~ year_cen + HGM_Class + (1 + year_cen|Code) + (1|year_fac), data = vmmi_ram)
+vmmimod_hgm <- lmer(vmmi ~ HGM_Class + (1 + year_cen|Code) + (1|year_fac), data = vmmi_ram)
+vmmimod_trend <- lmer(vmmi ~ year_cen + (1 + year_cen|Code) + (1|year_fac), data = vmmi_ram)
+vmmimod_null <- lmer(vmmi ~ 1 + (1 + year_cen|Code) + (1|year_fac), data = vmmi_ram)
 
-vmmimod_full <- lmer(vmmi ~ year_cen + HGM_Class + (1 + year_cen|Code) + (1|year_fac), data = vmmi_ram)
-vmmimod3 <- lmer(vmmi ~ HGM_Class + (1 + year_cen|Code) + (1|year_fac), data = vmmi_ram)
-vmmimod2 <- lmer(vmmi ~ year_cen + (1 + year_cen|Code) + (1|year_fac), data = vmmi_ram)
-vmmimod1 <- lmer(vmmi ~ 1 + (1 + year_cen|Code) + (1|year_fac), data = vmmi_ram)
-vmmimod_null <- lmer(vmmi ~ 1 + (1|Code), data = vmmi_ram)
-
-AIC(vmmimod1, vmmimod3, vmmimod2, vmmimod_full, vmmimod_null, vmmimod_full2, vmmimod_full3)
-plot(vmmimod3)
-qqnorm(residuals(vmmimod3))
-hist(residuals(vmmimod3))
-summary(vmmimod3)
-summary(vmmimod1)
-summary(vmmimod_full2)
-tidy(vmmimod3)
+arrange(AIC(vmmimod_full, vmmimod_main, vmmimod_hgm, vmmimod_trend, vmmimod_null), AIC)
+plot(vmmimod_hgm)
+qqnorm(residuals(vmmimod_hgm))
+hist(residuals(vmmimod_hgm))
+summary(vmmimod_hgm)
+tidy(vmmimod_hgm)
 
 # Mean C trends
-meancmod_full <- lmer(meanC ~ year_cen*HGM_Class + (1 + year_cen|Code), data = vmmi_ram)
-meancmod3 <- lmer(meanC ~ HGM_Class + (1 + year_cen|Code), data = vmmi_ram)
-meancmod2 <- lmer(meanC ~ year_cen + (1 + year_cen|Code), data = vmmi_ram)
-meancmod1 <- lmer(meanC ~ 1 + (1 + year_cen|Code), data = vmmi_ram)
+meancmod_full <- lmer(meanC ~ year_cen * HGM_Class + (1 + year_cen|Code), data = vmmi_ram)
+meancmod_main <- lmer(meanC ~ year_cen + HGM_Class + (1 + year_cen|Code), data = vmmi_ram)
+meancmod_hgm <- lmer(meanC ~ HGM_Class + (1 + year_cen|Code), data = vmmi_ram)
+meancmod_trend <- lmer(meanC ~ year_cen + (1 + year_cen|Code), data = vmmi_ram)
+meancmod_null <- lmer(meanC ~ 1 + (1 + year_cen|Code), data = vmmi_ram)
 
-AIC(meancmod1, meancmod3, meancmod2, meancmod_full)
-plot(meancmod3)
-qqnorm(residuals(meancmod3))
-hist(residuals(meancmod3))
-summary(meancmod3)
+arrange(AIC(meancmod_full, meancmod_main, meancmod_hgm, meancmod_trend, meancmod_null), AIC)
+plot(meancmod_hgm)
+qqnorm(residuals(meancmod_hgm))
+hist(residuals(meancmod_hgm))
+summary(meancmod_hgm)
 
 # % Bryophyte Trends
-bryomod_full <- lmer(Bryophyte_Cover ~ year_cen*HGM_Class + (1|Code), data = vmmi_ram)
-bryomod3 <- lmer(Bryophyte_Cover ~ HGM_Class + (1|Code), data = vmmi_ram) # random slopes failed to converge, so rand. int.
-bryomod2 <- lmer(Bryophyte_Cover ~ year_cen + (1|Code), data = vmmi_ram)
-bryomod1 <- lmer(Bryophyte_Cover ~ 1 + (1|Code), data = vmmi_ram)
+bryomod_full <- lmer(Bryophyte_Cover ~ year_cen * HGM_Class + (1|Code), data = vmmi_ram)
+bryomod_main <- lmer(Bryophyte_Cover ~ year_cen + HGM_Class + (1|Code), data = vmmi_ram)
+bryomod_hgm <- lmer(Bryophyte_Cover ~ HGM_Class + (1|Code), data = vmmi_ram) # random slopes failed to converge, so rand. int.
+bryomod_trend <- lmer(Bryophyte_Cover ~ year_cen + (1|Code), data = vmmi_ram)
+bryomod_null <- lmer(Bryophyte_Cover ~ 1 + (1|Code), data = vmmi_ram)
 
 # Bryo3 didn't converge. Diagnostics aren't very good. Bryo is kind of a weird metric
-anova(bryomod_full, bryomod3, bryomod2, bryomod1)
-AIC(bryomod1, bryomod3, bryomod2, bryomod_full)
-plot(bryomod3)
-qqnorm(residuals(bryomod3)) # a bit funky in the tails
-hist(residuals(bryomod3)) # potentially leptokurtic - heavier tails, but not terrible
-summary(bryomod3)
-tidy(bryomod3)
+arrange(AIC(bryomod_full, bryomod_main, bryomod_hgm, bryomod_trend, bryomod_null), AIC)
+plot(bryomod_hgm)
+qqnorm(residuals(bryomod_hgm)) # a bit funky in the tails
+hist(residuals(bryomod_hgm)) # potentially leptokurtic - heavier tails, but not terrible
+summary(bryomod_hgm)
+tidy(bryomod_hgm)
 
 # % Tolerant Trends
-tolmod_full <- lmer(Cover_Tolerant ~ year_cen*HGM_Class + (1 + year_cen|Code), data = vmmi_ram)
-tolmod3 <- lmer(Cover_Tolerant ~ HGM_Class + (1 + year_cen|Code), data = vmmi_ram)
-tolmod2 <- lmer(Cover_Tolerant ~ year_cen + (1 + year_cen|Code), data = vmmi_ram)
-tolmod1 <- lmer(Cover_Tolerant ~ 1 + (1 + year_cen|Code), data = vmmi_ram)
+tolmod_full <- lmer(Cover_Tolerant ~ year_cen * HGM_Class + (1 + year_cen|Code), data = vmmi_ram)
+tolmod_main <- lmer(Cover_Tolerant ~ year_cen + HGM_Class + (1 + year_cen|Code), data = vmmi_ram)
+tolmod_hgm <- lmer(Cover_Tolerant ~ HGM_Class + (1 + year_cen|Code), data = vmmi_ram)
+tolmod_trend <- lmer(Cover_Tolerant ~ year_cen + (1 + year_cen|Code), data = vmmi_ram)
+tolmod_null <- lmer(Cover_Tolerant ~ 1 + (1 + year_cen|Code) , data = vmmi_ram)
 
-anova(tolmod_full, tolmod3, tolmod2, tolmod1)
-arrange(AIC(tolmod1, tolmod3, tolmod2, tolmod_full), AIC)
-plot(tolmod3)
-qqnorm(residuals(tolmod3))
-hist(residuals(tolmod3))
-summary(tolmod3)
-tidy(tolmod3)
+arrange(AIC(tolmod_full, tolmod_main, tolmod_hgm, tolmod_trend, tolmod_null), AIC)
+plot(tolmod_full)
+qqnorm(residuals(tolmod_full))
+hist(residuals(tolmod_full))
+summary(tolmod_full)
+tidy(tolmod_full)
 
 # Coef of Wetness Trends
-wetmod_full <- lmer(mean_wet ~ year_cen*HGM_Class + (1|Code), data = vmmi_ram)
-wetmod3 <- lmer(mean_wet ~ HGM_Class + (1|Code), data = vmmi_ram)
-wetmod2 <- lmer(mean_wet ~ year_cen + (1|Code), data = vmmi_ram)
-wetmod1 <- lmer(mean_wet ~ 1 + (1|Code), data = vmmi_ram)
+wetmod_full <- lmer(mean_wet ~ year_cen * HGM_Class + (1 + year_cen|Code) + (1|year_fac), data = vmmi_ram)
+wetmod_main <- lmer(mean_wet ~ year_cen + HGM_Class + (1 + year_cen|Code) + (1|year_fac), data = vmmi_ram)
+wetmod_hgm <- lmer(mean_wet ~ HGM_Class + (1 + year_cen|Code) + (1|year_fac), data = vmmi_ram)
+wetmod_trend <- lmer(mean_wet ~ year_cen + (1 + year_cen|Code) + (1|year_fac), data = vmmi_ram)
+wetmod_null <- lmer(mean_wet ~ 1 + (1 + year_cen|Code) + (1|year_fac), data = vmmi_ram)
 
-anova(wetmod_full, wetmod3, wetmod2, wetmod1)
-arrange(AIC(wetmod1, wetmod3, wetmod2, wetmod_full), AIC)
-plot(wetmod3)
-qqnorm(residuals(wetmod3))
-hist(residuals(wetmod3))
-summary(wetmod3)
-tidy(wetmod3)
+arrange(AIC(wetmod_full, wetmod_main, wetmod_hgm, wetmod_trend, wetmod_null), AIC)
+plot(wetmod_hgm)
+qqnorm(residuals(wetmod_hgm))
+hist(residuals(wetmod_hgm))
+summary(wetmod_hgm)
+tidy(wetmod_hgm)
 
 table(vmmi_ram$HGM_Class) # depression is the intercept
 
@@ -133,38 +129,107 @@ table(vmmi_ram$HGM_Class) # depression is the intercept
 vmmi_newdat <- vmmi_ram |> select(Code, Year, meanC:vmmi_rating, mean_wet, HGM_Class, year_cen)
 
 vmmi_pred <- cbind(vmmi_newdat,
-                   pred_vmmi = predict(vmmimod3, newdata = vmmi_ram),
-                   pred_meanC = predict(meancmod3, newdata = vmmi_ram),
-                   pred_tol = predict(tolmod3, newdata = vmmi_ram),
-                   pred_wet = predict(vmmimod3, newdata = vmmi_ram)
+                   pred_vmmi = predict(vmmimod_hgm, newdata = vmmi_ram),
+                   pred_meanC = predict(meancmod_hgm, newdata = vmmi_ram),
+                   pred_tol = predict(tolmod_full, newdata = vmmi_ram),
+                   pred_wet = predict(vmmimod_hgm, newdata = vmmi_ram)
                    )
 head(vmmi_pred)
 
-vmmi_est <- data.frame(tidy(vmmimod3) |> filter(effect == "fixed")) |> select(term, estimate, std.error) |>
+vmmi_est <- data.frame(tidy(vmmimod_hgm) |> filter(effect == "fixed")) |> select(term, estimate, std.error) |>
   mutate(HGM_Class = ifelse(grepl("HGM_Class", term), gsub("HGM_Class", "", term), "Depression"),
          add = ifelse(HGM_Class == "Depression", 0, .data$estimate[.data$HGM_Class == "Depression"]),
          intercept = ifelse(HGM_Class == "Depression", estimate, estimate + add),
          resp = "vmmi")
 
-meanC_est <- data.frame(tidy(meancmod3) |> filter(effect == "fixed")) |> select(term, estimate, std.error) |>
+meanC_est <- data.frame(tidy(meancmod_hgm) |> filter(effect == "fixed")) |> select(term, estimate, std.error) |>
   mutate(HGM_Class = ifelse(grepl("HGM_Class", term), gsub("HGM_Class", "", term), "Depression"),
          add = ifelse(HGM_Class == "Depression", 0, .data$estimate[.data$HGM_Class == "Depression"]),
          intercept = ifelse(HGM_Class == "Depression", estimate, estimate + add),
          resp = "meanC")
 
-tol_est <- data.frame(tidy(tolmod3) |> filter(effect == "fixed")) |> select(term, estimate, std.error) |>
-  mutate(HGM_Class = ifelse(grepl("HGM_Class", term), gsub("HGM_Class", "", term), "Depression"),
-         add = ifelse(HGM_Class == "Depression", 0, .data$estimate[.data$HGM_Class == "Depression"]),
-         intercept = ifelse(HGM_Class == "Depression", estimate, estimate + add),
-         resp = "Cover_Tolerant")
+#++++++ Dist Tol. plotting ++++++
+# Dist. Tolerant model has interaction to accommodate
+tol_est <-
+  data.frame(tidy(tolmod_full) |> filter(effect == "fixed")) |> select(term, estimate, std.error) |>
+  mutate(HGM_Class = ifelse(grepl("HGM_Class", term), gsub("HGM_Class|year_cen:", "", term), "Depression"),
+         type = ifelse(grepl("year_cen", term), "slope", "intercept"),
+         add = case_when(HGM_Class == "Depression" ~ 0,
+                         type == "intercept" ~ .data$estimate[.data$HGM_Class == "Depression"
+                                                              & .data$type == "intercept"],
+                         type == "slope" ~ .data$estimate[.data$HGM_Class == "Depression"
+                                                          & .data$type == "slope"],
+                         TRUE ~ NA_real_),
+         est_corr = ifelse(HGM_Class == "Depression", estimate, estimate + add),
+         resp = "Cover_Tolerant") |>
+  arrange(HGM_Class, type)
 
-bryo_est <- data.frame(tidy(bryomod3) |> filter(effect == "fixed")) |> select(term, estimate, std.error) |>
+tol_ci <- tidy(as(tolmod_full, "merModLmerTest"), effects = 'fixed', conf.int = T, conf.method = 'profile')
+
+tol_est2 <- left_join(tol_est, tol_ci |> select(term, conf.low, conf.high), by = c("term")) |>
+  arrange(type, HGM_Class) |>
+  mutate(lowerCI = add + conf.low,
+         upperCI = add + conf.high)
+head(tol_est2)
+
+tol_est_wide <- tol_est2 |> select(HGM_Class, type, estimate = est_corr) |>
+  pivot_wider(names_from = type, values_from = c(estimate)) |>
+  select(HGM_Class, int = intercept, slp = slope)
+
+tol_est_wide2 <- tol_est2 |>
+  select(HGM_Class, type, est = est_corr, lCI = lowerCI, uCI = upperCI) |>
+  pivot_wider(names_from = type, values_from = c(est, lCI, uCI)) |>
+  select(HGM_Class, intercept = est_intercept,
+         int_lCI = lCI_intercept, int_uCI = uCI_intercept,
+         slope = est_slope,
+         slope_lCI = lCI_slope, slope_uCI = uCI_slope)
+head(tol_est_wide2)
+
+ggplot(tol_est_wide2, aes(x = slope, y = HGM_Class)) + theme_wet() +
+  geom_point(color = 'black', size = 2.5, shape = 21, fill = "dimgrey") +
+  geom_errorbar(aes(xmin = slope_lCI, xmax = slope_uCI), color = 'dimgrey') +
+  geom_vline(xintercept = 0, linetype = 'dashed') +
+  scale_y_discrete(limits = rev) +
+  labs(y = "HGM Class", x = "Slope (% cover/year)")
+
+ggsave("./results/Pct_tol_coef_plots.png", height = 5, width = 6)
+
+yrange <-
+  c(floor(min(vmmi_ram$Cover_Tolerant)),
+    ceiling(max(vmmi_ram$Cover_Tolerant))) #0, 251
+
+xrange <-
+  c(floor(min(vmmi_ram$year_cen)),
+    ceiling(max(vmmi_ram$year_cen))) #0, 13
+
+tol_est_wide$y1 = yrange[1]
+tol_est_wide$y2 = yrange[2]
+tol_est_wide$x1 = tol_est_wide$int + tol_est_wide$slp*yrange[1]
+tol_est_wide$x2 = tol_est_wide$int + tol_est_wide$slp*yrange[2]
+
+ggplot(vmmi_ram, aes(x = year_cen, y = Cover_Tolerant, group = HGM_Class)) +
+  theme_wet() +
+  geom_point(aes(group = Code), alpha = 0.6, color = '#474747') +
+  geom_line(aes(group = Code), alpha = 0.6, color = '#474747') +
+  geom_abline(data = tol_est_wide,
+              aes(intercept = int, slope = slp,
+                  group = HGM_Class), lwd = 0.75, linetype = 'dashed') +
+  scale_y_continuous(limits = yrange) +
+  scale_x_continuous(limits = c(0, 14), breaks = seq(0, 14, 3),
+                     labels = c(seq(0 + 2012, 14 + 2012, 3))) +
+  labs(y = "% Cover Tolerant", x = NULL) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) +
+  facet_wrap(~HGM_Class)
+
+#++++ End % cover tolerant ++++
+
+bryo_est <- data.frame(tidy(bryomod_hgm) |> filter(effect == "fixed")) |> select(term, estimate, std.error) |>
   mutate(HGM_Class = ifelse(grepl("HGM_Class", term), gsub("HGM_Class", "", term), "Depression"),
          add = ifelse(HGM_Class == "Depression", 0, .data$estimate[.data$HGM_Class == "Depression"]),
          intercept = ifelse(HGM_Class == "Depression", estimate, estimate + add),
          resp = "Bryophyte_Cover")
 
-wet_est <- data.frame(tidy(wetmod3) |> filter(effect == "fixed")) |> select(term, estimate, std.error) |>
+wet_est <- data.frame(tidy(wetmod_hgm) |> filter(effect == "fixed")) |> select(term, estimate, std.error) |>
   mutate(HGM_Class = ifelse(grepl("HGM_Class", term), gsub("HGM_Class", "", term), "Depression"),
          add = ifelse(HGM_Class == "Depression", 0, .data$estimate[.data$HGM_Class == "Depression"]),
          intercept = ifelse(HGM_Class == "Depression", estimate, estimate + add),
@@ -179,9 +244,7 @@ pred_plot <- function(param, ylabel, yran = NA, thresh = TRUE){
       c(floor(min(vmmi_pred[,param])), ceiling(max(vmmi_pred[,param])))
     } else {yran}
 
-  ggplot(vmmi_pred, aes(x = Year, y = .data[[param]])) + #,
-                        #fill = HGM_Class, color = HGM_Class,
-                        #shape = HGM_Class)) +
+  ggplot(vmmi_pred, aes(x = Year, y = .data[[param]])) +
     theme_wet() +
     {if(thresh == TRUE) annotate(geom = "rect",
                                  xmin = 2011, xmax = 2026, ymin = 0, ymax = 41.48136,
@@ -197,16 +260,6 @@ pred_plot <- function(param, ylabel, yran = NA, thresh = TRUE){
     geom_line(aes(group = Code), alpha = 0.6, color = '#474747') +
     scale_y_continuous(limits = yrange) +
     scale_x_continuous(limits = c(2011, 2026), breaks = seq(2011, 2026, 3))+
-    # scale_color_manual(values = c("Depression" = "#70D8CF",
-    #                               "Flats" = "#994F00",
-    #                               "Riverine" = "#053AC3",
-    #                               "Slope" = "#FFBF30"),
-    #                    name = NULL, aesthetics = c("fill", "color")) +
-    # scale_shape_manual(values = c("Depression" = 21,
-    #                               "Flats" = 22,
-    #                               "Riverine" = 24,
-    #                               "Slope" = 25),
-    #                    name = NULL) +
     geom_abline(data = ints,
                 aes(intercept = intercept, slope = rep(0, 4),
                     group = HGM_Class),
@@ -219,14 +272,45 @@ pred_plot <- function(param, ylabel, yran = NA, thresh = TRUE){
 pred_plot("vmmi", "Vegetation MMI", yran = c(0, 100)) +
   facet_wrap(~HGM_Class)
 
-ggsave("./results/Vegetation_MMI_RAM_facet.png", height = 5, width = 6)
+# ggsave("./results/Vegetation_MMI_RAM_facet.png", height = 5, width = 6)
 
 pred_plot("meanC", "Mean C", thresh = T) + facet_wrap(~HGM_Class)
 
-pred_plot("Cover_Tolerant", "% Cover Tolerant", thresh = F) + facet_wrap(~HGM_Class)
+#pred_plot("Cover_Tolerant", "% Cover Tolerant", thresh = F) + facet_wrap(~HGM_Class)
+# Prediction plot is different b/c interaction
+
+emmeans(tolmod_full, spec = c("HGM_Class", "year_cen"), level = 0.95)
+
+ggplot(vmmi_pred, aes(x = Year, y = .data[[param]])) + #,
+  #fill = HGM_Class, color = HGM_Class,
+  #shape = HGM_Class)) +
+  theme_wet() +
+  {if(thresh == TRUE) annotate(geom = "rect",
+                               xmin = 2011, xmax = 2026, ymin = 0, ymax = 41.48136,
+                               fill = "#CC6666", alpha = 0.5)} +
+  {if(thresh == TRUE) annotate(geom = "rect",
+                               xmin = 2011, xmax = 2026, ymin = 41.48136, ymax = 60.94853,
+                               fill = "#FFF394", alpha = 0.5)} +
+  {if(thresh == TRUE) annotate(geom = "rect",
+                               xmin = 2011, xmax = 2026, ymin = 60.94853, ymax = 100,
+                               fill = "#88CF89", alpha = 0.5)} +
+
+  geom_point(aes(group = Code), alpha = 0.6, color = '#474747') +
+  geom_line(aes(group = Code), alpha = 0.6, color = '#474747') +
+  scale_y_continuous(limits = yrange) +
+  scale_x_continuous(limits = c(2011, 2026), breaks = seq(2011, 2026, 3))+
+  geom_abline(data = ints,
+              aes(intercept = intercept, slope = rep(0, 4),
+                  group = HGM_Class),
+              lwd = 0.75, linetype = 'dashed') +
+  labs(y = ylabel, x = NULL) +
+  #guides(color = guide_legend(override.aes = list(alpha = 1))) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
+
 
 pred_plot("mean_wet", "Mean Wetness", thresh = F) + facet_wrap(~HGM_Class)
-ggsave("./results/mean_wetness_RAM_facet.png", height = 5, width = 6)
+
+# ggsave("./results/mean_wetness_RAM_facet.png", height = 5, width = 6)
 
 
 pred_plot2 <- function(param, ylabel, yran = NA){
@@ -278,7 +362,7 @@ pred_plot2("mean_wet", "Mean Wetness")
 pred_plot2("meanC", "Mean C", yran = c(2.5, 6.5))
 pred_plot2("Invasive_Cover", "% Inv. Cov", yran = c(0, 10))
 pred_plot2("Bryophyte_Cover", "% Bryo. Cov")
-pred_plot2("Cover_Tolerant", "% Dist. Tol.")
+#pred_plot2("Cover_Tolerant", "% Dist. Tol.")
 
 #----- VMMI distributions among site types -----
 # ACAD sites
