@@ -5,6 +5,8 @@ library(tidyverse)
 library(lme4)
 library(broom.mixed)
 library(patchwork)
+#library(ggrepel)
+library(directlabels)
 
 vmmi_comb <- read.csv("./data/ACAD_data/Vegetation_MMI_COW_2011-2025_ACAD_RAM_SENT_GRME.csv") |>
   mutate(site_type = ifelse(Panel == 0, "SENT", "RAM"))
@@ -48,6 +50,58 @@ theme_wet <- function(){
 # 0 Facultative
 # 3 Facultative upland
 # 5 Obligate upland
+
+#---- Sentinel plot -----
+vmmi_sen <- vmmi_comb |> filter(site_type == "SENT")
+vmmi_sen$Code[vmmi_sen$Code == "GRME"] <- "GRME (IAH)"
+vmmi_sen$HGM_Class[vmmi_sen$Code == "GILM"] <- "Riverine"
+vmmi_sen$HGM_Class[vmmi_sen$Code == "LITH"] <- "Depression"
+
+table(vmmi_sen$Code)
+head(vmmi_sen)
+table(vmmi_sen$Code, vmmi_sen$HGM_Class)
+
+ggplot(vmmi_sen, aes(x = Year, y = vmmi, color = vmmi_rating, fill = vmmi_rating,
+                      group = Code, shape = vmmi_rating)) + theme_wet() +
+  geom_point() + geom_line() +
+  scale_color_manual(values = c("Poor" = "indianred", "Fair" = "gold", "Good" = "green2"), name = "VMMI rating") +
+  scale_fill_manual(values = c("Poor" = "indianred", "Fair" = "gold", "Good" = "green2"), name = "VMMI rating") +
+  scale_shape_manual(values = c("Poor" = 25, "Fair" = 21, "Good" = 24), name = "VMMI rating") +
+  #facet_wrap(~Code, ncol = 5) +
+  facet_wrap(~HGM_Class) +
+  ylim(0, 100) +
+  labs(y = "Vegetation MMI") +
+  theme(legend.position = 'bottom',
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1, color = 'black'),
+        axis.text.y = element_text(color = 'black')) +
+  scale_x_continuous(breaks = c(2011, 2016, 2021), limits = c(2010, 2022))
+
+
+table(vmmi_sen$Code)
+head(vmmi_sen)
+table(vmmi_sen$HGM_Class, vmmi_sen$Code)
+
+vmmi_sen$label <- ifelse(vmmi_sen$Year == max(vmmi_sen$Year), vmmi_sen$Code, NA_character_)
+
+ggplot(vmmi_sen, aes(x = Year, y = vmmi, Group = Code)) + theme_wet() +
+  facet_wrap(~HGM_Class) +
+  ylim(0, 100) +
+  labs(y = "Vegetation MMI") +
+  theme(legend.position = 'bottom',
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1, color = 'black'),
+        axis.text.y = element_text(color = 'black')) +
+  scale_x_continuous(breaks = c(2011, 2016, 2021), limits = c(2010, 2022)) +
+  annotate(geom = "rect", xmin = 2010, xmax = 2022, ymin = 0, ymax = 41.48136,
+           fill = "#CC6666", alpha = 0.5) +
+  annotate(geom = "rect", xmin = 2010, xmax = 2022, ymin = 41.48136, ymax = 60.94853,
+           fill = "#FFF394", alpha = 0.5) +
+  annotate(geom = "rect", xmin = 2010, xmax = 2022, ymin = 60.94853, ymax = 100,
+           fill = "#88CF89", alpha = 0.5) +
+  geom_line(color = 'dimgrey') + geom_point(color = 'black', fill = 'dimgrey', shape = 21) +
+  #geom_label_repel(aes(label = label), nudge_x = 1, na.rm = T)
+  geom_dl(aes(label = Code), method = list(dl.combine("first.points", "last.points")))
+
+head(vmmi_sen)
 
 #---- Trend analysis ----
 vmmi_ram$year_cen <- vmmi_ram$Year - min(vmmi_ram$Year)
