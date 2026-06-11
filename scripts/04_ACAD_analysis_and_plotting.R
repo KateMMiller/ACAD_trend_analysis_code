@@ -8,12 +8,55 @@ library(patchwork)
 library(ggrepel)
 library(lmerTest)
 
-vmmi_comb <- read.csv("./data/ACAD_data/Vegetation_MMI_COW_2011-2025_ACAD_RAM_SENT_GRME.csv") |>
-  mutate(site_type = ifelse(Panel == 0, "SENT", "RAM"))
-names(vmmi_comb)
+# All site table of ratings
+vmmi_all <- read.csv("./results/VegetationMMI_NWCA_PROB_ACAD_GRME_most_recent_REF.csv")
+vmmi_pct_rat <- vmmi_all |>
+  mutate(vmmi_rating_orig = ifelse(vmmi > 65.22746, "Good",
+                                   ifelse(vmmi < 52.785, "Poor", "Fair")))
+
+vmmi_pct_rat_orig <- vmmi_pct_rat |>
+  filter(Year > 2020) |>
+  filter(!(site_type == "ACAD GRME" & Year < 2025)) |>
+  filter(!(site_type == "ACAD GILM" & Year < 2025)) |>
+  mutate(vmmi_n = n(), .by = c("site_type")) |>
+  summarize(vmmi_tot = sum(!is.na(vmmi)),
+            vmmi_pct = (vmmi_tot/first(vmmi_n))*100,
+            .by = c("vmmi_rating_orig", "site_type"))
+
+vmmi_pct_rat_orig$vmmi_rat_fac <- factor(vmmi_pct_rat_orig$vmmi_rating_orig, levels = c("Good", "Fair", "Poor"))
+
+vmmi_pct_rat_orig2 <- vmmi_pct_rat_orig |> select(-vmmi_rating_orig) |>
+  arrange(site_type, vmmi_rat_fac) |>
+  pivot_wider(names_from = vmmi_rat_fac, values_from = c(vmmi_tot, vmmi_pct),
+              values_fill = 0)
+
+vmmi_pct_rat_orig2
+
+vmmi_pct_rat_new <- vmmi_pct_rat |>
+  filter(Year > 2020) |>
+  filter(!(site_type == "ACAD GRME" & Year < 2025)) |>
+  filter(!(site_type == "ACAD GILM" & Year < 2025)) |>
+  mutate(vmmi_n = n(), .by = c("site_type")) |>
+  summarize(vmmi_tot = sum(!is.na(vmmi)),
+            vmmi_pct = (vmmi_tot/first(vmmi_n))*100,
+            .by = c("vmmi_rating", "site_type"))
+
+vmmi_pct_rat
+
+vmmi_pct_rat_new$vmmi_rat_fac <- factor(vmmi_pct_rat_new$vmmi_rating, levels = c("Good", "Fair", "Poor"))
+
+vmmi_pct_rat_new2 <- vmmi_pct_rat_new |> select(-vmmi_rating) |>
+  arrange(site_type, vmmi_rat_fac) |>
+  pivot_wider(names_from = vmmi_rat_fac, values_from = c(vmmi_tot, vmmi_pct),
+              values_fill = 0)
+
+vmmi_pct_rat_new2
 
 # Split out ACAD sites for analysis and plotting
-vmmi_ram <- vmmi_comb |> filter(grepl("R-", Code))
+vmmi_acad <- read.csv("./data/ACAD_data/Vegetation_MMI_COW_2011-2025_ACAD_RAM_SENT_GRME.csv") |>
+  mutate(site_type = ifelse(Panel == 0, "SENT", "RAM"))
+
+vmmi_ram <- vmmi_acad |> filter(grepl("R-", Code))
 vmmi_ram_status <- vmmi_ram |> filter(Year > 2020)
 table(vmmi_ram_status$vmmi_rating)
 
@@ -29,6 +72,13 @@ GILM <- rbind(vmmi_ram |> filter(Code == "R-31") |> filter(Year > 2020),
   mutate(site = "GILM")
 
 comb_gm <- rbind(GRME, GILM)
+
+GILM_v_GRME <- comb_gm |> summarize(median = median(vmmi),
+                                    se = sd(vmmi)/sqrt(n()),
+                                    .by = "site")
+
+comb_gm
+
 # write.csv(comb_gm, "./data/ACAD_data/VMMI_GRME_vs_GILM.csv", row.names = F)
 
 thresh <- c(41.48136, 60.94853)
@@ -736,3 +786,4 @@ ggsave("./results/vegmmi_vs_stressors_EPA_ACAD.png", height = 5, width = 8)
 
 # For every additional stressor, there's a 3 point decrease in mean VMMI
 # Flats have the highest intercept and Riverine have the lowest.
+
