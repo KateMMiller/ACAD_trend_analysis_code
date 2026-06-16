@@ -347,18 +347,52 @@ return(gs_WL_stats)
 wl_stats_comb <- rbind(calc_WL_stats(df = wl_gilm, col_match = "_WL") |> mutate(site_type = "SEN"),
                        calc_WL_stats(df = grme_wide, col_match = "GRME_") |> mutate(site_type = "INT")) |>
   arrange(desc(site_type), site, Year) |> data.frame() |>
-  mutate(site_type2 = ifelse(site_type == "SEN", "Sentinel", "Great Meadow"))
+  mutate(site_type2 = factor(ifelse(site_type == "SEN", "Sentinel", "Great Meadow"),
+                             levels = c("Sentinel", "Great Meadow")),
+         site_name = sub("_WL", "", site))
 
 #write.csv(wl_stats_comb, "./results/water_level_statistics_SEN_GRME.csv", row.names = F)
-
-
+wl_stats_comb$site_name <- factor(wl_stats_comb$site_name,
+                                  levels = c("BIGH", "DUCK", "GILM", "HEBR",
+                                             "HODG", "LIHU", "NEMI", "WMTN",
+                                             "GRME_01", "GRME_02", "GRME_03",
+                                             "GRME_04", "GRME_05", "GRME_06"))
 head(wl_stats_comb)
 
+cols = c("BIGH" = "#d53e4f",
+         "DUCK" = "#f46d43",
+         "GILM" = "#fdae61",
+         "HEBR" = "#fee08b",
+         "HODG" = "#e6f598",
+         "LIHU" = "#abdda4",
+         "NEMI" = "#66c2a5",
+         "WMTN" = "#3288bd",
+         "GRME_01" = "#a6bddb",
+         "GRME_02" = "#74a9cf",
+         "GRME_03" = "#3690c0",
+         "GRME_04" = "#0570b0",
+         "GRME_05" = "#045a8d",
+         "GRME_06" = "#023858")
+
+shps = c("BIGH" = 24, "DUCK" = 25, "GILM" = 23, "HEBR" = 21,
+         "HODG" = 22, "LIHU" = 24, "NEMI" = 25, "WMTN" = 23,
+         "GRME_01" = 24, "GRME_02" = 25, "GRME_03" = 23,
+         "GRME_04" = 21, "GRME_05" = 24, "GRME_06" = 25)
+
+szs = c(2, 2, 2.5, 3, 2.5, 2)
+
 ggplot(wl_stats_comb |> filter(Year >= 2016),
-       aes(x = Year, y = WL_mean, group = site)) +
-  geom_point() + geom_line() + facet_wrap(~site_type2, ncol = 1) +
+       aes(x = Year, y = WL_mean, group = site_name,
+           fill = site_name, shape = site_name)) +
+  geom_line(aes(color = site_name)) +
+  geom_point(color ='dimgrey') +
+  facet_wrap(~site_type2, ncol = 1) +
+  scale_fill_manual(values = cols) +
+  scale_shape_manual(values = shps) +
+  scale_color_manual(values = cols) +
   scale_x_continuous(breaks = seq(2016, 2025, 3),
                      limits = c(2015.9, 2025.1)) +
   theme_wet() +
   labs(y = "Mean Water Level (cm)")
 
+ggsave("./results/GS_water_level_stats.png", width = 10, height = 6)
