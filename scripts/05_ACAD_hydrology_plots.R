@@ -347,15 +347,20 @@ return(gs_WL_stats)
 wl_stats_comb <- rbind(calc_WL_stats(df = wl_gilm, col_match = "_WL") |> mutate(site_type = "SEN"),
                        calc_WL_stats(df = grme_wide, col_match = "GRME_") |> mutate(site_type = "INT")) |>
   arrange(desc(site_type), site, Year) |> data.frame() |>
-  mutate(site_type2 = ifelse(site_type == "SEN", "Sentinel", "Great Meadow"))
+  mutate(site_type2 = factor(ifelse(site_type == "SEN", "Sentinel", "Great Meadow"),
+                             levels = c("Sentinel", "Great Meadow")),
+         site_name = sub("_WL", "", site))
 
 #write.csv(wl_stats_comb, "./results/water_level_statistics_SEN_GRME.csv", row.names = F)
-
-
+wl_stats_comb$site_name <- factor(wl_stats_comb$site_name,
+                                  levels = c("BIGH", "DUCK", "GILM", "HEBR",
+                                             "HODG", "LIHU", "NEMI", "WMTN",
+                                             "GRME_01", "GRME_02", "GRME_03",
+                                             "GRME_04", "GRME_05", "GRME_06"))
 head(wl_stats_comb)
 
 ggplot(wl_stats_comb |> filter(Year >= 2016),
-       aes(x = Year, y = WL_mean, group = site)) +
+       aes(x = Year, y = WL_mean, group = site_name, color = site_name)) +
   geom_point() + geom_line() + facet_wrap(~site_type2, ncol = 1) +
   scale_x_continuous(breaks = seq(2016, 2025, 3),
                      limits = c(2015.9, 2025.1)) +
