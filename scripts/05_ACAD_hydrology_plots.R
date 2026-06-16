@@ -346,7 +346,19 @@ return(gs_WL_stats)
 
 wl_stats_comb <- rbind(calc_WL_stats(df = wl_gilm, col_match = "_WL") |> mutate(site_type = "SEN"),
                        calc_WL_stats(df = grme_wide, col_match = "GRME_") |> mutate(site_type = "INT")) |>
-  arrange(desc(site_type), site, Year)
+  arrange(desc(site_type), site, Year) |> data.frame() |>
+  mutate(site_type2 = ifelse(site_type == "SEN", "Sentinel", "Great Meadow"))
 
-write.csv(wl_stats_comb, "./results/water_level_statistics_SEN_GRME.csv", row.names = F)
+#write.csv(wl_stats_comb, "./results/water_level_statistics_SEN_GRME.csv", row.names = F)
+
+
+head(wl_stats_comb)
+
+ggplot(wl_stats_comb |> filter(Year >= 2016),
+       aes(x = Year, y = WL_mean, group = site)) +
+  geom_point() + geom_line() + facet_wrap(~site_type2, ncol = 1) +
+  scale_x_continuous(breaks = seq(2016, 2025, 3),
+                     limits = c(2015.9, 2025.1)) +
+  theme_wet() +
+  labs(y = "Mean Water Level (cm)")
 
