@@ -382,8 +382,8 @@ shps = c("BIGH" = 24, "DUCK" = 25, "GILM" = 23, "HEBR" = 21,
 szs = c(2, 2, 2.5, 3, 2.5, 2)
 
 ggplot(wl_stats_comb |> filter(Year >= 2016),
-       aes(x = Year, y = WL_mean, group = site_name,
-           fill = site_name, shape = site_name)) +
+    aes(x = Year, y = WL_mean, group = site_name,
+        fill = site_name, shape = site_name)) +
   geom_line(aes(color = site_name)) +
   geom_point(color ='dimgrey') +
   facet_wrap(~site_type2, ncol = 1) +
