@@ -787,3 +787,234 @@ ggsave("./results/vegmmi_vs_stressors_EPA_ACAD.png", height = 5, width = 8)
 # For every additional stressor, there's a 3 point decrease in mean VMMI
 # Flats have the highest intercept and Riverine have the lowest.
 
+#--- ACAD Ordination plots ---
+#grme_spp <- read.csv('./data/ACAD_data/ACAD_wetland_Species_List_20260126.csv')
+library(tidyverse)
+library(ggrepel)
+library(wetlandACAD)
+library(vegan)
+
+theme_wet <- function(){
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_rect(color = "#696969", fill = "white",
+                                        linewidth = 0.4),
+        plot.background = element_blank(),
+        strip.background = element_rect(color = "#696969", fill = "grey90", linewidth = 0.4),
+        legend.key = element_blank(),
+        axis.line.x = element_line(color = "#696969", linewidth = 0.4),
+        axis.line.y = element_line(color = "#696969", linewidth = 0.4),
+        axis.ticks = element_line(color = "#696969", linewidth = 0.4))
+}
+
+# Combine RAM and SEN species data
+importRAM(export_protected = T, type = 'zip',
+  filepath = "./data/ACAD_data/NETN_Wetland_RAM_Data_20260608_NPSonly.zip")
+ram_spp1 <- VIEWS_RAM$species_list
+
+ram_spp <- ram_spp1 |> filter(Visit_Type == "VS") |>
+  select(SiteCode, YEAR = Year, SYMBOL = PLANTS_Code) |>
+  mutate(SiteType = "RAM",
+         present = 1)
+
+epa_acad <- read.csv("./data/EPA_compiled/vegetation_mmi_2011-2021_ACAD_ref.csv")
+acad_uids <- sort(unique(epa_acad$UID))
+sen_spp1 <- read.csv('./data/EPA_compiled/plant_cover_2011-2021.csv') |>
+  filter(UID %in% acad_uids)
+
+# Clean up species names inconsistencies across years
+sen_spp1$SYMBOL[sen_spp1$SYMBOL == "ALINR"] <- "ALIN2"
+sen_spp1$SYMBOL[sen_spp1$SYMBOL == "ANPOG"] <- "ANPO"
+sen_spp1$SYMBOL[sen_spp1$SYMBOL == "CATUT"] <- "CATU5"
+sen_spp1$SYMBOL[sen_spp1$SYMBOL == "CAECE"] <- "CAEC"
+sen_spp1$SYMBOL[sen_spp1$SYMBOL == "CALAA"] <- "CALAA"
+sen_spp1$SYMBOL[sen_spp1$SYMBOL == "CAMAI2"] <- "CAMA12"
+sen_spp1$SYMBOL[sen_spp1$SYMBOL == "ERANA3"] <- "ERAN6"
+sen_spp1$SYMBOL[sen_spp1$SYMBOL == "LEGR"] <- "RHGR3"
+sen_spp1$SYMBOL[sen_spp1$SYMBOL == "LIBOL2"] <- "LIBO3"
+sen_spp1$SYMBOL[sen_spp1$SYMBOL == "MOCA7"] <- "MOPE6"
+sen_spp1$SYMBOL[sen_spp1$SYMBOL == "NULUV"] <- "NUVA2"
+sen_spp1$SYMBOL[sen_spp1$SYMBOL == "OSCI"] <- "OSCI2"
+sen_spp1$SYMBOL[sen_spp1$SYMBOL == "PLCL"] <- "GYCL"
+sen_spp1$SYMBOL[sen_spp1$SYMBOL == "SAPUP6"] <- "SAPU4"
+sen_spp1$SYMBOL[sen_spp1$SYMBOL == "SOULL2"] <- "SOUL"
+sen_spp1$SYMBOL[sen_spp1$SYMBOL == "SPALL"] <- "SPAL2"
+sen_spp1$SYMBOL[sen_spp1$SYMBOL == "THPAP"] <- "THPA"
+sen_spp1$SYMBOL[sen_spp1$SYMBOL == "VINU"] <- "VINUC"
+
+sen_spp <- sen_spp1 |>
+  mutate(SiteCode = case_when(grepl("301", SITE_ID) ~ "DUCK",
+                              grepl("302", SITE_ID) ~ "WMTN",
+                              grepl("303", SITE_ID) ~ "BIGH",
+                              grepl("304", SITE_ID) ~ "GILM",
+                              grepl("305", SITE_ID) ~ "LITH",
+                              grepl("306", SITE_ID) ~ "NEMI",
+                              grepl("307", SITE_ID) ~ "GRME",
+                              grepl("308", SITE_ID) ~ "HEBR",
+                              grepl("309", SITE_ID) ~ "HODG",
+                              grepl("310", SITE_ID) ~ "FRAZ")) |>
+  summarize(cov = sum(COVER, na.rm = T),
+            .by = c(SYMBOL, SiteCode, YEAR)) |>
+  mutate(present = ifelse(cov > 0, 1, 0),
+         SiteType = "SEN") |>
+  arrange(SiteCode, SYMBOL, YEAR) |>
+  select(SiteCode, YEAR, SYMBOL, SiteType, present)
+
+spp_comb <- rbind(ram_spp, sen_spp)
+
+data.frame(table(spp_comb$SiteCode, spp_comb$YEAR, spp_comb$SYMBOL)) |>
+  filter(Freq > 1)
+
+spp_wide <- spp_comb |> arrange(SYMBOL, SiteCode) |> filter(!is.na(SYMBOL)) |>
+  mutate(cycle = case_when(YEAR < 2016 ~ 1,
+                           between(YEAR, 2016, 2020) ~ 2,
+                           YEAR > 2020 ~ 3)) |>
+  pivot_wider(names_from = SYMBOL, values_from = present, values_fill = 0) |>
+  arrange(SiteType, SiteCode, YEAR) |>
+  data.frame()
+
+row.names(spp_wide) <- paste0(spp_wide$SiteCode, "_", spp_wide$cycle)
+
+# drop species found <4 times (ie only in 1 plot every visit)
+rare_spp <- spp_comb |> summarize(num_pres = sum(present), .by = c(SYMBOL)) |>
+  filter(num_pres < 4) |> select(SYMBOL)
+
+spp_wide2 <- spp_comb |> arrange(SYMBOL, SiteCode) |>
+  filter(!is.na(SYMBOL)) |>
+  filter(!SYMBOL %in% rare_spp$SYMBOL) |>
+  mutate(cycle = case_when(YEAR < 2016 ~ 1,
+                           between(YEAR, 2016, 2020) ~ 2,
+                           YEAR > 2020 ~ 3)) |>
+  pivot_wider(names_from = SYMBOL, values_from = present, values_fill = 0) |>
+  arrange(SiteType, SiteCode, YEAR) |>
+  data.frame()
+
+# vmmi and cow for envfit
+vmmi <- read.csv('./data/ACAD_data/Vegetation_MMI_COW_2011-2025_ACAD_RAM_SENT_GRME.csv') |>
+  filter(site_type %in% c("ACAD RAM", "ACAD Sent.")) |>
+  rename(YEAR = Year, SiteCode = Code) |>
+  mutate(cycle = case_when(YEAR < 2016 ~ 1,
+                           between(YEAR, 2016, 2020) ~ 2,
+                           YEAR > 2020 ~ 3))
+
+# Ordination
+nmds2 <- metaMDS(spp_wide2[,6:ncol(spp_wide2)], distance = 'jaccard', k = 2, maxit = 100,
+                 autotransform = FALSE)
+stressplot(nmds2)
+nmds2 # stress = 0.135
+
+spp_env <- left_join(spp_wide |> select(SiteCode:cycle),
+                     vmmi,
+                     by = c("SiteCode", "YEAR", "cycle"))
+
+spp_envfit <- envfit(nmds2, spp_env |> select(MeanC = meanC,
+                                              BryoCov = Bryophyte_Cover,
+                                              InvCov = Invasive_Cover,
+                                              DTolCov = Cover_Tolerant,
+                                              VegMMI = vmmi,
+                                              MeanWet = mean_wet,
+                                              cycle))
+spp_fit <- envfit(nmds2, spp_wide2[,6:ncol(spp_wide2)])
+
+# plot(nmds2, display = 'sites')
+# ordihull(nmds2,
+#          spp_wide$SiteCode, display = 'sites', draw = 'lines')
+
+site_scores1 <- as.data.frame(scores(nmds2, display = 'sites'))
+site_scores2 <- cbind(spp_wide[,1:5], site_scores1) #|>
+site_scores2$site_lab <- ifelse(site_scores2$SiteCode %in% c("R-13", "R-04", "R-19"), paste0("GRME"),
+                          ifelse(site_scores2$SiteCode %in% c("R-31", "GILM"), paste0("GILM"),
+                            NA_character_))
+site_scores2$site_lab <- ifelse(site_scores2$SiteCode %in% c("GILM"), paste0("GILM-S"), site_scores$site_lab)
+
+site_hgm <- vmmi |> filter(cycle == 3) |> select(SiteCode, HGM_Class)
+site_hgm$HGM_Class[site_hgm$SiteCode %in% c("R-13", "R-04", "R-19", "R-31", "GILM")] <- "Riverine"
+
+
+site_scores <- left_join(site_scores2,
+                         site_hgm,
+                         by = "SiteCode")
+
+spp_scores <- as.data.frame(scores(spp_fit, display = 'vectors'))
+spp_scores <- cbind(spp_scores, pval = spp_fit$vectors$pvals)
+sig_spp_scores <- spp_scores |> filter(pval <= 0.05)
+
+env_scores <- as.data.frame(scores(spp_envfit, display = 'vectors'))
+env_scores <- cbind(env_scores, pval = spp_envfit$vectors$pvals)
+sig_env_scores <- env_scores |> filter(pval <= 0.05) |> data.frame()
+sig_env_scores$var <- row.names(sig_env_scores)
+
+table(site_scores$SiteCode)
+
+ggplot(site_scores, aes(x = NMDS1, y = NMDS2)) + theme_wet() +
+  geom_point(aes(color = SiteType, shape = SiteType, size = SiteType)) +
+  scale_color_manual(values = c("#82B9D1", "#4d9221")) +
+  scale_shape_manual(values = c(19, 17)) +
+  scale_size_manual(values = c(2.25, 2.25)) +
+  geom_path(aes(group = SiteCode, color = SiteType), alpha = 0.8) + #,
+   # arrow = arrow(length = unit(0.1, "inches"), type = 'closed'))
+  geom_text_repel(data = site_scores |> filter(cycle == 3),
+                  aes(label = SiteCode), size = 3.5)
+
+ggplot(site_scores, aes(x = NMDS1, y = NMDS2)) + theme_wet() +
+  geom_point(aes(color = SiteType, shape = SiteType, size = SiteType)) +
+  scale_color_manual(values = c("#82B9D1", "#4d9221")) +
+  scale_shape_manual(values = c(19, 17)) +
+  scale_size_manual(values = c(2.25, 2.25)) +
+  geom_path(aes(group = SiteCode, color = SiteType), alpha = 0.8) +
+  geom_text_repel(data = site_scores |> filter(cycle == 3) |> filter(site_lab %in% c("GILM", "GRME", "GILM-S")),
+                  aes(label = site_lab, color = SiteType),
+                    size = 3.5, segment.size = 0.1, segment.color = 'dimgrey',
+                    min.segment.length = 0.01, show.legend = F) +
+  geom_segment(data = sig_env_scores, aes(x = 0, xend = NMDS1, y = 0, yend = NMDS2),
+               arrow = arrow(length = unit(0.1, "inches")), color = 'dimgrey', lwd = 0.8,
+               show.legend = F) +
+  geom_text_repel(data = sig_env_scores, aes(x = NMDS1, y = NMDS2, label = var),
+                  show.legend = F)
+
+ggsave("./results/ACAD_ordination_plot_envfit.png", height = 5, width = 6)
+
+# By HGM Class
+ggplot(site_scores, aes(x = NMDS1, y = NMDS2)) + theme_wet() +
+  geom_point(aes(fill = HGM_Class, shape = HGM_Class, size = HGM_Class), color = 'dimgrey') +
+  scale_fill_manual(values = c(Depression = "#70D8CF",
+                               Flats = "#994F00",
+                               Riverine = "#053ac3",
+                               Slope = "#FFBF30"), name = "HGM Class") +
+  scale_shape_manual(values = c(21, 22, 24, 25), name = "HGM Class") +
+  scale_size_manual(values = c(2.5, 2.25, 2, 2), name = "HGM Class") +
+  geom_path(aes(group = SiteCode), color = 'dimgrey', alpha = 0.8,
+                arrow = arrow(length = unit(0.1, "inches"), type = 'open')) +
+  geom_text_repel(data = site_scores |> filter(cycle == 3) |> filter(site_lab %in% c("GILM", "GILM-S", "GRME")),
+                  aes(label = site_lab), # color = SiteType),
+                  size = 3.5, segment.size = 0.1, segment.color = 'dimgrey',
+                  min.segment.length = 0.01, show.legend = F) +
+  theme(legend.position = 'bottom',
+        legend.title = element_text(size = 10),
+        legend.text = element_text(size = 10)) +
+  geom_segment(data = sig_env_scores, aes(x = 0, xend = NMDS1, y = 0, yend = NMDS2),
+               arrow = arrow(length = unit(0.1, "inches")), color = 'blue', lwd = 0.6,
+               show.legend = F) +
+  geom_text_repel(data = sig_env_scores, aes(x = NMDS1, y = NMDS2, label = var), color = 'blue',
+                  show.legend = F)
+
+ggsave("./results/ACAD_ordination_plot_HGM_envfit.png", height = 5, width = 6.5)
+
+ggplot(site_scores, aes(x = NMDS1, y = NMDS2)) + theme_wet() +
+  geom_path(aes(group = SiteCode, color = SiteType), alpha = 0.8) + #,
+  geom_point(aes(color = SiteType)) +
+  scale_color_manual(values = c("#82B9D1", "#4d9221")) +
+  geom_segment(data = sig_env_scores, aes(x = 0, xend = NMDS1, y = 0, yend = NMDS2),
+               arrow = arrow(length = unit(0.1, "inches")), color = 'dimgrey', lwd = 0.6) +
+  geom_text_repel(data = sig_env_scores, aes(x = NMDS1, y = NMDS2, label = var))
+
+sig_env_scores
+head(spp_envfit)
+
+
+
+
+
+
+
+
+
