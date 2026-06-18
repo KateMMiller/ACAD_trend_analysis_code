@@ -19,9 +19,9 @@ theme_wet <- function(){
         axis.ticks = element_line(color = "#696969", size = 0.4))
 }
 
-wl_gilm <- read.csv("./data/ACAD_data/well_prec_data_2013-2025.csv")
-wl_gilm$year_fac <- as.factor(wl_gilm$Year)
-wl_gilm <- wl_gilm |> mutate(timestamp2 = ifelse(hr == 0,
+wl_sen <- read.csv("./data/ACAD_data/well_prec_data_2013-2025.csv")
+wl_sen$year_fac <- as.factor(wl_sen$Year)
+wl_sen <- wl_sen |> mutate(timestamp2 = ifelse(hr == 0,
                                                  format(as.POSIXct(paste0(timestamp, " 00:00:00"),
                                                                    format = "%Y-%m-%d %H:%M:%S",
                                                                    tz = "America/New_York"),
@@ -33,10 +33,10 @@ wl_gilm <- wl_gilm |> mutate(timestamp2 = ifelse(hr == 0,
                              Date = as.Date(Date, format = "%Y-%m-%d")) |>
   select(timestamp = timestamp2, Date:year_fac)
 
-head(wl_gilm)
-write.csv(wl_gilm, "./data/ACAD_data/SEN_water_level_precip_data_2013-2025.csv", row.names = F)
+head(wl_sen)
+write.csv(wl_sen, "./data/ACAD_data/SEN_water_level_precip_data_2013-2025.csv", row.names = F)
 
-gilm_sum <- wl_gilm |> filter(Year >= 2016) |>
+gilm_sum <- wl_sen |> filter(Year >= 2016) |>
   summarize(num_samps = sum(!is.na(GILM_WL)),
             median_wl = median(GILM_WL, na.rm = T),
             min_wl = min(GILM_WL, na.rm = T),
@@ -230,10 +230,11 @@ new_drgt2 <- left_join(new_drgt, drgt, by = c("Date" = "ValidStart")) |>
   filter(!is.na(drgt)) |>
   filter(doy >= 135 & doy <= 274)
 
-wl_gilm2 <- left_join(wl_gilm, new_drgt2, by = c("doy", "Year" = "year", "year_fac", "Date"))
+wl_sen2 <- left_join(wl_sen, new_drgt2, by = c("doy", "Year" = "year", "year_fac", "Date"))
+head(wl_sen2)
 
 # facet by year
-ggplot(wl_gilm2 |> filter(Year > 2019) |> droplevels(),
+ggplot(wl_sen2 |> filter(Year > 2019) |> droplevels(),
        aes(x = doy_h, y = GILM_WL, group = year_fac)) +
   geom_line(linewidth = 0.75, aes(color = "Gilmore Meadow")) + theme_wet() +
   geom_line(data = wl_grme |> filter(Year > 2019) |> droplevels() |> filter(plot.num == 1),
@@ -251,7 +252,7 @@ ggplot(wl_gilm2 |> filter(Year > 2019) |> droplevels(),
            color = "dimgrey", linewidth = 1.5) +
   facet_wrap(~year_fac, ncol = 2)
 
-head(wl_gilm2)
+head(wl_sen2)
 
 # Calc. growing season summary stats
 grme_wide <- wl_grme |>
@@ -265,7 +266,7 @@ grme_wide <- wl_grme |>
   pivot_wider(names_from = plot_name, values_from = water.depth)
 
 head(grme_wide)
-head(wl_gilm)
+head(wl_sen)
 
 calc_WL_stats <- function(df, col_match = "GRME"){
 
@@ -287,9 +288,12 @@ well_prp_long2 <- well_prp_long |> group_by(Year, site) |>
 # Calculate growing season stats
 well_gs_stats <- well_prp_long2 |> group_by(Year, site) |>
   summarise(WL_mean = mean(water_level_cm, na.rm = TRUE),
+            WL_med = median(water_level_cm, na.rm = TRUE),
             WL_sd = sd(water_level_cm, na.rm = TRUE),
             WL_min = suppressWarnings(min(water_level_cm, na.rm = TRUE)),
             WL_max = suppressWarnings(max(water_level_cm, na.rm = TRUE)),
+            WL_u95 = suppressWarnings(quantile(water_level_cm, probs = 0.975, na.rm = TRUE)),
+            WL_l95 = suppressWarnings(quantile(water_level_cm, probs = 0.025, na.rm = TRUE)),
             max_inc = suppressWarnings(max(change_WL, na.rm = TRUE)),
             max_dec = suppressWarnings(min(change_WL, na.rm = TRUE)),
             prop_GS_comp = length(which(!is.na(water_level_cm)))/n()*100,
@@ -352,12 +356,29 @@ wl_stats_comb <- rbind(calc_WL_stats(df = wl_gilm, col_match = "_WL") |> mutate(
          site_name = sub("_WL", "", site))
 
 #write.csv(wl_stats_comb, "./results/water_level_statistics_SEN_GRME.csv", row.names = F)
+
+head(wl_stats_comb)
+# adding in HGM Class
+vmmi <- read.csv('./data/ACAD_data/Vegetation_MMI_COW_2011-2025_ACAD_RAM_SENT_GRME.csv') |>
+  filter(site_type %in% c("ACAD RAM", "ACAD Sent.")) |>
+  rename(YEAR = Year, SiteCode = Code) |>
+  mutate(cycle = case_when(YEAR < 2016 ~ 1,
+                           between(YEAR, 2016, 2020) ~ 2,
+                           YEAR > 2020 ~ 3))
+site_hgm <- vmmi |> filter(cycle == 3) |> select(SiteCode, HGM_Class)
+site_hgm$HGM_Class[site_hgm$SiteCode %in% c("R-13", "R-04", "R-19", "R-31", "GILM")] <- "Riverine"
+
 wl_stats_comb$site_name <- factor(wl_stats_comb$site_name,
                                   levels = c("BIGH", "DUCK", "GILM", "HEBR",
                                              "HODG", "LIHU", "NEMI", "WMTN",
                                              "GRME_01", "GRME_02", "GRME_03",
                                              "GRME_04", "GRME_05", "GRME_06"))
-head(wl_stats_comb)
+
+wl_stats_comb2 <- left_join(wl_stats_comb, site_hgm, by = c("site_name" = "SiteCode")) |>
+  mutate(year_range = WL_max - WL_min)
+
+wl_stats_comb2$HGM_Class[grepl("GRME_|LIHU", wl_stats_comb2$site_name)] <- "Riverine"
+
 
 cols = c("BIGH" = "#d53e4f",
          "DUCK" = "#f46d43",
@@ -381,18 +402,38 @@ shps = c("BIGH" = 24, "DUCK" = 25, "GILM" = 23, "HEBR" = 21,
 
 szs = c(2, 2, 2.5, 3, 2.5, 2)
 
-ggplot(wl_stats_comb |> filter(Year >= 2016),
-    aes(x = Year, y = WL_mean, group = site_name,
-        fill = site_name, shape = site_name)) +
-  geom_line(aes(color = site_name)) +
+wl_stats2 <- wl_stats_comb2 |> filter(!site_name %in% c("GRME_02", "GRME_03", "GRME_04", "GRME_05", "GRME_06"))
+
+wl_stats_site <- wl_stats_comb2 |>
+  summarize(med_range = round(median(year_range, na.rm = T), 2),
+            med_WL = round(median(WL_med, na.rm = T), 2),
+            med_inc = round(median(max_inc, na.rm = T), 2),
+            med_max = round(median(WL_max, na.rm = T), 2),
+            med_min = round(median(WL_min, na.rm = T), 2),
+            med_GS_chg = round(median(GS_change, na.rm = T), 2),
+            .by = c("site_name", "HGM_Class")) |>
+  arrange(med_range)
+
+wl_stats_site
+write.csv(wl_stats_site, "./results/wl_summary_stats.csv", row.names = F)
+
+ggplot(wl_stats_comb |> filter(Year >= 2016),  #|>
+         #filter(!site_name %in% c("GRME-02", "GRME-03", "GRME-04", "GRME-05", "GRME-06")),
+    aes(x = Year, y = WL_med, group = site_name)) + #,
+        #fill = site_name, shape = site_name)) +
+  #geom_ribbon(aes(ymin = WL_l95, ymax = WL_u95), alpha = 0.2, color = 'grey') +
+  geom_errorbar(aes(ymin = WL_l95, ymax = WL_u95)) +
+  geom_line() +
   geom_point(color ='dimgrey') +
-  facet_wrap(~site_type2, ncol = 1) +
-  scale_fill_manual(values = cols) +
-  scale_shape_manual(values = shps) +
-  scale_color_manual(values = cols) +
-  scale_x_continuous(breaks = seq(2016, 2025, 3),
-                     limits = c(2015.9, 2025.1)) +
+  facet_wrap(~site_name, ncol = 3) +
+  # scale_fill_manual(values = cols) +
+  # scale_shape_manual(values = shps) +
+  # scale_color_manual(values = cols) +
+  scale_x_continuous(breaks = seq(2016, 2024, 2),
+                     limits = c(2015.5, 2025.5)) +
   theme_wet() +
-  labs(y = "Mean Water Level (cm)")
+  labs(y = "Mean Water Level (cm)") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+
 
 ggsave("./results/GS_water_level_stats.png", width = 10, height = 6)

@@ -10,10 +10,10 @@ library(lmerTest)
 
 # All site table of ratings
 vmmi_all <- read.csv("./results/VegetationMMI_NWCA_PROB_ACAD_GRME_most_recent_REF.csv")
+vmmi_all$HGM_Class[grepl("LIHU", vmmi_all$Code)] <- "Riverine"
 vmmi_pct_rat <- vmmi_all |>
   mutate(vmmi_rating_orig = ifelse(vmmi > 65.22746, "Good",
                                    ifelse(vmmi < 52.785, "Poor", "Fair")))
-
 vmmi_pct_rat_orig <- vmmi_pct_rat |>
   filter(Year > 2020) |>
   filter(!(site_type == "ACAD GRME" & Year < 2025)) |>
@@ -55,20 +55,21 @@ vmmi_pct_rat_new2
 # Split out ACAD sites for analysis and plotting
 vmmi_acad <- read.csv("./data/ACAD_data/Vegetation_MMI_COW_2011-2025_ACAD_RAM_SENT_GRME.csv") |>
   mutate(site_type = ifelse(Panel == 0, "SENT", "RAM"))
+vmmi_acad$HGM_Class[grepl("LITH", vmmi_acad$Code)] <- "Riverine"
 
 vmmi_ram <- vmmi_acad |> filter(grepl("R-", Code))
 vmmi_ram_status <- vmmi_ram |> filter(Year > 2020)
 table(vmmi_ram_status$vmmi_rating)
 
-vmmi_grme <- vmmi_comb |> filter(grepl("GR", Code))
+vmmi_grme <- vmmi_acad |> filter(grepl("GR", Code))
 
 GRME <- rbind(vmmi_ram |> filter(Code %in% c("R-04", "R-13", "R-19")) |> filter(Year > 2020),
-              vmmi_comb |> filter(grepl("GRME", Code)) |> filter(Year == 2025))|>
+              vmmi_acad |> filter(grepl("GRME", Code)) |> filter(Year == 2025))|>
   mutate(site = "GRME") |> filter(site_type == "RAM")
 
 GILM <- rbind(vmmi_ram |> filter(Code == "R-31") |> filter(Year > 2020),
-              vmmi_comb |> filter(Code == "GILM") |> filter(Year > 2020),
-              vmmi_comb |> filter(grepl("GIME", Code)) |> filter(Year == 2025)) |>
+              vmmi_acad |> filter(Code == "GILM") |> filter(Year > 2020),
+              vmmi_acad |> filter(grepl("GIME", Code)) |> filter(Year == 2025)) |>
   mutate(site = "GILM")
 
 comb_gm <- rbind(GRME, GILM)
@@ -104,10 +105,10 @@ theme_wet <- function(){
 # 5 Obligate upland
 
 #---- Sentinel plot -----
-vmmi_sen <- vmmi_comb |> filter(site_type == "SENT")
+vmmi_sen <- vmmi_acad |> filter(site_type == "SENT")
 vmmi_sen$Code[vmmi_sen$Code == "GRME"] <- "GRME (IAH)"
 vmmi_sen$HGM_Class[vmmi_sen$Code == "GILM"] <- "Riverine"
-vmmi_sen$HGM_Class[vmmi_sen$Code == "LITH"] <- "Depression"
+vmmi_sen$HGM_Class[vmmi_sen$Code == "LITH"] <- "Riverine"
 
 table(vmmi_sen$Code)
 head(vmmi_sen)
