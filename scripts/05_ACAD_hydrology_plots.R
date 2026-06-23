@@ -421,6 +421,24 @@ head(wl_stats2)
 
 ggplot(wl_stats_comb2 |> filter(Year >= 2016) |>
          filter(site_name %in% c("GRME_01", "GILM", "GRME_05")),
+       aes(x = Year, y = WL_med, group = site_name, fill = site_name, shape = site_name)) + #,
+  #fill = site_name, shape = site_name)) +
+  geom_ribbon(aes(ymin = WL_l95, ymax = WL_u95), alpha = 0.2, color = 'grey') +
+  #geom_errorbar(aes(ymin = WL_l95, ymax = WL_u95)) +
+  geom_line() +
+  geom_point(color ='dimgrey') +
+  #facet_wrap(~site_name, ncol = 1) +
+  scale_fill_manual(values = cols) +
+  scale_shape_manual(values = shps) +
+  scale_color_manual(values = cols) +
+  scale_x_continuous(breaks = seq(2016, 2024, 2),
+                     limits = c(2015.5, 2025.5)) +
+  theme_wet() +
+  labs(y = "Median Water Level (cm)") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+
+ggplot(wl_stats_comb2 |> filter(Year >= 2016) |>
+         filter(site_name %in% c("GRME_01", "GILM", "GRME_05")),
     aes(x = Year, y = WL_med, group = site_name)) + #,
         #fill = site_name, shape = site_name)) +
   #geom_ribbon(aes(ymin = WL_l95, ymax = WL_u95), alpha = 0.2, color = 'grey') +
