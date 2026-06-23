@@ -16,7 +16,7 @@ theme_wet <- function(){
         legend.key = element_blank(),
         axis.line.x = element_line(color = "#696969", linewidth = 0.4),
         axis.line.y = element_line(color = "#696969", linewidth = 0.4),
-        axis.ticks = element_line(color = "#696969", size = 0.4))
+        axis.ticks = element_line(color = "#696969", linewidth = 0.4))
 }
 
 wl_sen <- read.csv("./data/ACAD_data/well_prec_data_2013-2025.csv")
@@ -208,51 +208,51 @@ plot_bands(df = wl_sen, y = "WMTN_WL", ptitle = "Western Mtn. Swamp")
 
 p_grme + p_gilm + plot_layout(axes = "collect", guides = 'collect') & theme(legend.position = 'bottom')
 
-ggsave("./results/Great_vs_Gilmore_water_level_distributions.png", width = 10, height = 6)
+# ggsave("./results/Great_vs_Gilmore_water_level_distributions.png", width = 10, height = 6)
 
 # Add rug for when drought conditions
-drgt <- getClimDrought(park = "ACAD", years = 2020:2025)
+# drgt <- getClimDrought(park = "ACAD", years = 2020:2025)
 
-drgt <- drgt |>
-  filter(County == "Hancock County") |>
-  select(DSCI, ValidStart)
+# drgt <- drgt |>
+#  filter(County == "Hancock County") |>
+#  select(DSCI, ValidStart)
 
-new_drgt <- data.frame(Date = seq.Date(min(drgt$ValidStart), max(drgt$ValidStart), 1))
+# new_drgt <- data.frame(Date = seq.Date(min(drgt$ValidStart), max(drgt$ValidStart), 1))
 
-new_drgt2 <- left_join(new_drgt, drgt, by = c("Date" = "ValidStart")) |>
-  mutate(Date = as.Date(Date, format = "%Y-%m-%d"),
-         month = format(Date, "%d"),
-         doy = as.numeric(format(Date, "%j")),
-         year = as.numeric(format(Date, "%Y")),
-         year_fac = as.factor(year)) |>
-  fill(DSCI, .direction = 'down') |>
-  mutate(drgt = ifelse(DSCI > 0, 1, NA_real_)) |>
-  filter(!is.na(drgt)) |>
-  filter(doy >= 135 & doy <= 274)
-
-wl_sen2 <- left_join(wl_sen, new_drgt2, by = c("doy", "Year" = "year", "year_fac", "Date"))
-head(wl_sen2)
+# new_drgt2 <- left_join(new_drgt, drgt, by = c("Date" = "ValidStart")) |>
+#   mutate(Date = as.Date(Date, format = "%Y-%m-%d"),
+#          month = format(Date, "%d"),
+#          doy = as.numeric(format(Date, "%j")),
+#          year = as.numeric(format(Date, "%Y")),
+#          year_fac = as.factor(year)) |>
+#   fill(DSCI, .direction = 'down') |>
+#   mutate(drgt = ifelse(DSCI > 0, 1, NA_real_)) |>
+#   filter(!is.na(drgt)) |>
+#   filter(doy >= 135 & doy <= 274)
+#
+# wl_sen2 <- left_join(wl_sen, new_drgt2, by = c("doy", "Year" = "year", "year_fac", "Date"))
+# head(wl_sen2)
 
 # facet by year
-ggplot(wl_sen2 |> filter(Year > 2019) |> droplevels(),
-       aes(x = doy_h, y = GILM_WL, group = year_fac)) +
-  geom_line(linewidth = 0.75, aes(color = "Gilmore Meadow")) + theme_wet() +
-  geom_line(data = wl_grme |> filter(Year > 2019) |> droplevels() |> filter(plot.num == 1),
-            linewidth = 0.75,
-            aes(x = doy_h, y = water.depth, group = year_fac, color = "Great Meadow")) +
-  labs(y = "Water Level (cm)", x = NULL) +
-  scale_color_manual(values = c("Gilmore Meadow" = "#0A60D1", "Great Meadow" = "#FFBB14")) +
-  scale_x_continuous(breaks = c(135, 166, 196, 227, 258),
-                     limits = c(135, 275),
-                     labels = c("May-15", "Jun-15", "Jul-15", "Aug-15", "Sep-15")) +
-  geom_hline(yintercept = 0) +
-  theme(legend.title = element_blank(), legend.position = "bottom") +
-  geom_rug(data = new_drgt2 |> filter(year > 2019), stat = 'identity',
-           aes(x = doy, y = drgt, group = year_fac),
-           color = "dimgrey", linewidth = 1.5) +
-  facet_wrap(~year_fac, ncol = 2)
-
-head(wl_sen2)
+# ggplot(wl_sen2 |> filter(Year > 2019) |> droplevels(),
+#        aes(x = doy_h, y = GILM_WL, group = year_fac)) +
+#   geom_line(linewidth = 0.75, aes(color = "Gilmore Meadow")) + theme_wet() +
+#   geom_line(data = wl_grme |> filter(Year > 2019) |> droplevels() |> filter(plot.num == 1),
+#             linewidth = 0.75,
+#             aes(x = doy_h, y = water.depth, group = year_fac, color = "Great Meadow")) +
+#   labs(y = "Water Level (cm)", x = NULL) +
+#   scale_color_manual(values = c("Gilmore Meadow" = "#0A60D1", "Great Meadow" = "#FFBB14")) +
+#   scale_x_continuous(breaks = c(135, 166, 196, 227, 258),
+#                      limits = c(135, 275),
+#                      labels = c("May-15", "Jun-15", "Jul-15", "Aug-15", "Sep-15")) +
+#   geom_hline(yintercept = 0) +
+#   theme(legend.title = element_blank(), legend.position = "bottom") +
+#   geom_rug(data = new_drgt2 |> filter(year > 2019), stat = 'identity',
+#            aes(x = doy, y = drgt, group = year_fac),
+#            color = "dimgrey", linewidth = 1.5) +
+#   facet_wrap(~year_fac, ncol = 2)
+#
+# head(wl_sen2)
 
 # Calc. growing season summary stats
 grme_wide <- wl_grme |>
@@ -298,6 +298,8 @@ well_gs_stats <- well_prp_long2 |> group_by(Year, site) |>
             max_dec = suppressWarnings(min(change_WL, na.rm = TRUE)),
             prop_GS_comp = length(which(!is.na(water_level_cm)))/n()*100,
             .groups = "drop")
+
+head(well_gs_stats)
 
 # Calculate change in WL from average Jun to average September
 well_gs_month <- well_prp_long2 |> group_by(Year, mon, site) |>
@@ -355,7 +357,7 @@ wl_stats_comb <- rbind(calc_WL_stats(df = wl_sen, col_match = "_WL") |> mutate(s
                              levels = c("Sentinel", "Great Meadow")),
          site_name = sub("_WL", "", site))
 
-#write.csv(wl_stats_comb, "./results/water_level_statistics_SEN_GRME.csv", row.names = F)
+# write.csv(wl_stats_comb, "./results/water_level_statistics_SEN_GRME.csv", row.names = F)
 
 head(wl_stats_comb)
 # adding in HGM Class
@@ -366,7 +368,9 @@ vmmi <- read.csv('./data/ACAD_data/Vegetation_MMI_COW_2011-2025_ACAD_RAM_SENT_GR
                            between(YEAR, 2016, 2020) ~ 2,
                            YEAR > 2020 ~ 3))
 site_hgm <- vmmi |> filter(cycle == 3) |> select(SiteCode, HGM_Class)
-site_hgm$HGM_Class[site_hgm$SiteCode %in% c("R-13", "R-04", "R-19", "R-31", "GILM")] <- "Riverine"
+site_hgm$HGM_Class[site_hgm$SiteCode %in% c("R-04", "R-19", "R-31", "GILM")] <- "Riverine"
+site_hgm$HGM_Class[site_hgm$SiteCode %in% c("R-13")] <- "Depression"
+
 
 wl_stats_comb$site_name <- factor(wl_stats_comb$site_name,
                                   levels = c("BIGH", "DUCK", "GILM", "HEBR",
@@ -377,8 +381,40 @@ wl_stats_comb$site_name <- factor(wl_stats_comb$site_name,
 wl_stats_comb2 <- left_join(wl_stats_comb, site_hgm, by = c("site_name" = "SiteCode")) |>
   mutate(year_range = WL_max - WL_min)
 
-wl_stats_comb2$HGM_Class[grepl("GRME_|LIHU", wl_stats_comb2$site_name)] <- "Riverine"
+wl_stats_comb2$HGM_Class[grepl("LIHU", wl_stats_comb2$site_name)] <- "Riverine"
+wl_stats_comb2$HGM_Class[wl_stats_comb2$site_name %in% c("GRME_01", "GRME_05")] <- "Riverine"
+wl_stats_comb2$HGM_Class[wl_stats_comb2$site_name %in% c("GRME_02", "GRME_04", "GRME_06")] <- "Depression"
+wl_stats_comb2$HGM_Class[wl_stats_comb2$site_name %in% c("GRME_03")] <- "Slope"
 
+wl_prop_long <- wl_stats_comb2 |> select(Year, site_name, HGM_Class,
+                                         prop_over_0cm, prop_bet_0_neg30cm, prop_under_neg30cm) |>
+  pivot_longer(cols = starts_with("prop"), names_to = "level", values_to = "prop") |>
+  mutate(level = case_when(grepl("over_0cm", level) ~ "surface",
+                           grepl("bet_0_neg30", level) ~ "saturated",
+                           grepl("under_neg30", level) ~ "dry"))
+
+head(wl_prop_long)
+
+wl_prop_long$site_name <- factor(wl_prop_long$site_name,
+                                  levels = c("BIGH", "DUCK", "GILM", "HEBR",
+                                             "HODG", "LIHU", "NEMI", "WMTN",
+                                             "GRME_01", "GRME_02", "GRME_03",
+                                             "GRME_04", "GRME_05", "GRME_06"))
+table(wl_prop_long$HGM_Class,wl_prop_long$site_name)
+#write.csv(wl_stats_comb2, "./results/water_level_statistics_SEN_GRME.csv", row.names = F)
+
+ggplot(wl_prop_long |> filter(Year >= 2016),
+       aes(x = Year, y = prop, group = level, fill = level)) +
+  geom_bar(stat = 'identity', color = 'dimgrey') +
+  facet_wrap(~site_name, ncol = 4) +
+  scale_fill_manual(values = c("#fee08b", "#66c2a5", "#3288bd"), name = "Water Level Class") +
+  theme_wet() +
+  scale_x_continuous(breaks = seq(2016, 2024, 2),
+                     limits = c(2015.5, 2025.5)) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
+  labs(x = NULL, y = "Proportion of growing season")
+
+#++++ ENDED HERE. ORDER SITE BY HGM
 
 cols = c("BIGH" = "#d53e4f",
          "DUCK" = "#f46d43",
