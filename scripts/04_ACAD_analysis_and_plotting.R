@@ -155,7 +155,7 @@ ggplot(vmmi_sen, aes(x = Year, y = vmmi, Group = Code)) + theme_wet() +
   geom_label_repel(aes(label = label), #nudge_x = 0.1,
                    nudge_y = -12, na.rm = T, min.segment.length = 1)
 
-ggsave("./results/Vegetation_MMI_SEN_facet.png", height = 5, width = 6)
+# ggsave("./results/Vegetation_MMI_SEN_facet.png", height = 5, width = 6)
 
 head(vmmi_sen)
 
@@ -316,7 +316,7 @@ ggplot(tol_est_wide2, aes(x = slope, y = HGM_Class)) + theme_wet() +
   scale_y_discrete(limits = rev) +
   labs(y = "HGM Class", x = "Slope (% cover/year)")
 
-ggsave("./results/Pct_tol_coef_plots.png", height = 5, width = 6)
+# ggsave("./results/Pct_tol_coef_plots.png", height = 5, width = 6)
 
 # Main
 tol_est_main <-
@@ -414,7 +414,7 @@ pred_plot <- function(param, ylabel, yran = NA, thresh = TRUE){
 pred_plot("vmmi", "Vegetation MMI", yran = c(0, 100)) +
   facet_wrap(~HGM_Class)
 
-# ggsave("./results/Vegetation_MMI_RAM_facet.png", height = 5, width = 6)
+# # ggsave("./results/Vegetation_MMI_RAM_facet.png", height = 5, width = 6)
 
 pred_plot("meanC", "Mean C", thresh = T) + facet_wrap(~HGM_Class)
 
@@ -424,7 +424,7 @@ pred_plot("Bryophyte_Cover", "% Cover Bryophyte", thresh = F) + facet_wrap(~HGM_
 
 pred_plot("mean_wet", "Mean Wetness", thresh = F) + facet_wrap(~HGM_Class)
 
-# ggsave("./results/mean_wetness_RAM_facet.png", height = 5, width = 6)
+# # ggsave("./results/mean_wetness_RAM_facet.png", height = 5, width = 6)
 
 
 pred_plot2 <- function(param, ylabel, yran = NA){
@@ -470,9 +470,9 @@ pred_plot2 <- function(param, ylabel, yran = NA){
 }
 
 pred_plot2("vmmi", "Veg. MMI", yran = c(0, 100))
-# ggsave("./results/Vegetation_MMI_RAM.png", height = 4, width = 6)
+# # ggsave("./results/Vegetation_MMI_RAM.png", height = 4, width = 6)
 pred_plot2("mean_wet", "Mean Wetness")
-# ggsave("./results/mean_wetness_RAM.png", height = 4, width = 6)
+# # ggsave("./results/mean_wetness_RAM.png", height = 4, width = 6)
 pred_plot2("meanC", "Mean C", yran = c(2.5, 6.5))
 pred_plot2("Invasive_Cover", "% Inv. Cov", yran = c(0, 10))
 pred_plot2("Bryophyte_Cover", "% Bryo. Cov")
@@ -524,7 +524,7 @@ ggplot(vmmi_comb,
              linetype = 'dashed') +
   geom_hline(yintercept = thresh[2], linewidth = 0.75, color = "#696969")
 
-ggsave("./results/VMMI_distribution_site_type_ACAD_EPA.png", height = 4, width = 6)
+# ggsave("./results/VMMI_distribution_site_type_ACAD_EPA.png", height = 4, width = 6)
 
 #--- Number of stressors vs VMMI ---
 head(vmmi_comb)
@@ -783,7 +783,7 @@ stress_pa +
 stress_p2 + stress_pa2 + plot_layout(guides = 'collect', axis_titles = 'collect') &
   theme(legend.position = 'bottom')
 
-ggsave("./results/vegmmi_vs_stressors_EPA_ACAD.png", height = 5, width = 8)
+# ggsave("./results/vegmmi_vs_stressors_EPA_ACAD.png", height = 5, width = 8)
 
 # For every additional stressor, there's a 3 point decrease in mean VMMI
 # Flats have the highest intercept and Riverine have the lowest.
@@ -910,7 +910,7 @@ spp_env <- left_join(spp_wide |> select(SiteCode:cycle),
 spp_envfit <- envfit(nmds2, spp_env |> select(MeanC = meanC,
                                               BryoCov = Bryophyte_Cover,
                                               InvCov = Invasive_Cover,
-                                              DTolCov = Cover_Tolerant,
+                                              STolCov = Cover_Tolerant,
                                               VegMMI = vmmi,
                                               MeanWet = mean_wet,
                                               cycle))
@@ -925,11 +925,10 @@ site_scores2 <- cbind(spp_wide[,1:5], site_scores1) #|>
 site_scores2$site_lab <- ifelse(site_scores2$SiteCode %in% c("R-13", "R-04", "R-19"), paste0("GRME"),
                           ifelse(site_scores2$SiteCode %in% c("R-31", "GILM"), paste0("GILM"),
                             NA_character_))
-site_scores2$site_lab <- ifelse(site_scores2$SiteCode %in% c("GILM"), paste0("GILM-S"), site_scores$site_lab)
+site_scores2$site_lab <- ifelse(site_scores2$SiteCode %in% c("GILM"), paste0("GILM-S"), site_scores2$site_lab)
 
 site_hgm <- vmmi |> filter(cycle == 3) |> select(SiteCode, HGM_Class)
 site_hgm$HGM_Class[site_hgm$SiteCode %in% c("R-13", "R-04", "R-19", "R-31", "GILM")] <- "Riverine"
-
 
 site_scores <- left_join(site_scores2,
                          site_hgm,
@@ -972,7 +971,7 @@ ggplot(site_scores, aes(x = NMDS1, y = NMDS2)) + theme_wet() +
   geom_text_repel(data = sig_env_scores, aes(x = NMDS1, y = NMDS2, label = var),
                   show.legend = F)
 
-ggsave("./results/ACAD_ordination_plot_envfit.png", height = 5, width = 6)
+# ggsave("./results/ACAD_ordination_plot_envfit.png", height = 5, width = 6)
 
 # By HGM Class
 ggplot(site_scores, aes(x = NMDS1, y = NMDS2)) + theme_wet() +
@@ -998,7 +997,7 @@ ggplot(site_scores, aes(x = NMDS1, y = NMDS2)) + theme_wet() +
   geom_text_repel(data = sig_env_scores, aes(x = NMDS1, y = NMDS2, label = var), color = 'blue',
                   show.legend = F)
 
-ggsave("./results/ACAD_ordination_plot_HGM_envfit.png", height = 5, width = 6.5)
+# ggsave("./results/ACAD_ordination_plot_HGM_envfit.png", height = 5, width = 6.5)
 
 ggplot(site_scores, aes(x = NMDS1, y = NMDS2)) + theme_wet() +
   geom_path(aes(group = SiteCode, color = SiteType), alpha = 0.8) + #,
