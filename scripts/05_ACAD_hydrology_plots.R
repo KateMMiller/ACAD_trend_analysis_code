@@ -197,14 +197,14 @@ plot_bands <- function(df, y, ptitle){
   return(p)
   }
 
-plot_bands(df = wl_gilm, y = "BIGH_WL", ptitle = "Big Heath")
-plot_bands(df = wl_gilm, y = "DUCK_WL", ptitle = "Duck Pond")
-plot_bands(df = wl_gilm, y = "GILM_WL", ptitle = "Gilmore Meadow")
-plot_bands(df = wl_gilm, y = "HEBR_WL", ptitle = "Heath Brook")
-plot_bands(df = wl_gilm, y = "HODG_WL", ptitle = "Hodgdon Swamp")
-plot_bands(df = wl_gilm, y = "LIHU_WL", ptitle = "Little Hunter")
-plot_bands(df = wl_gilm, y = "NEMI_WL", ptitle = "New Mills Meadow - NW")
-plot_bands(df = wl_gilm, y = "WMTN_WL", ptitle = "Western Mtn. Swamp")
+plot_bands(df = wl_sen, y = "BIGH_WL", ptitle = "Big Heath")
+plot_bands(df = wl_sen, y = "DUCK_WL", ptitle = "Duck Pond")
+plot_bands(df = wl_sen, y = "GILM_WL", ptitle = "Gilmore Meadow")
+plot_bands(df = wl_sen, y = "HEBR_WL", ptitle = "Heath Brook")
+plot_bands(df = wl_sen, y = "HODG_WL", ptitle = "Hodgdon Swamp")
+plot_bands(df = wl_sen, y = "LIHU_WL", ptitle = "Little Hunter")
+plot_bands(df = wl_sen, y = "NEMI_WL", ptitle = "New Mills Meadow - NW")
+plot_bands(df = wl_sen, y = "WMTN_WL", ptitle = "Western Mtn. Swamp")
 
 p_grme + p_gilm + plot_layout(axes = "collect", guides = 'collect') & theme(legend.position = 'bottom')
 
@@ -348,7 +348,7 @@ return(gs_WL_stats)
 
 }
 
-wl_stats_comb <- rbind(calc_WL_stats(df = wl_gilm, col_match = "_WL") |> mutate(site_type = "SEN"),
+wl_stats_comb <- rbind(calc_WL_stats(df = wl_sen, col_match = "_WL") |> mutate(site_type = "SEN"),
                        calc_WL_stats(df = grme_wide, col_match = "GRME_") |> mutate(site_type = "INT")) |>
   arrange(desc(site_type), site, Year) |> data.frame() |>
   mutate(site_type2 = factor(ifelse(site_type == "SEN", "Sentinel", "Great Meadow"),
@@ -402,7 +402,8 @@ shps = c("BIGH" = 24, "DUCK" = 25, "GILM" = 23, "HEBR" = 21,
 
 szs = c(2, 2, 2.5, 3, 2.5, 2)
 
-wl_stats2 <- wl_stats_comb2 |> filter(!site_name %in% c("GRME_02", "GRME_03", "GRME_04", "GRME_05", "GRME_06"))
+wl_stats2 <- wl_stats_comb2 |> #filter(!site_name %in% c("GRME_02", "GRME_03", "GRME_04", "GRME_05", "GRME_06"))
+  filter(!site_name %in% c("GRME_01", "GRME_02", "GRME_03", "GRME_04", "GRME_06"))
 
 wl_stats_site <- wl_stats_comb2 |>
   summarize(med_range = round(median(year_range, na.rm = T), 2),
@@ -416,23 +417,24 @@ wl_stats_site <- wl_stats_comb2 |>
 
 wl_stats_site
 write.csv(wl_stats_site, "./results/wl_summary_stats.csv", row.names = F)
+head(wl_stats2)
 
-ggplot(wl_stats_comb |> filter(Year >= 2016),  #|>
-         #filter(!site_name %in% c("GRME-02", "GRME-03", "GRME-04", "GRME-05", "GRME-06")),
+ggplot(wl_stats_comb2 |> filter(Year >= 2016) |>
+         filter(site_name %in% c("GRME_01", "GILM", "GRME_05")),
     aes(x = Year, y = WL_med, group = site_name)) + #,
         #fill = site_name, shape = site_name)) +
   #geom_ribbon(aes(ymin = WL_l95, ymax = WL_u95), alpha = 0.2, color = 'grey') +
   geom_errorbar(aes(ymin = WL_l95, ymax = WL_u95)) +
   geom_line() +
   geom_point(color ='dimgrey') +
-  facet_wrap(~site_name, ncol = 3) +
+  facet_wrap(~site_name, ncol = 1) +
   # scale_fill_manual(values = cols) +
   # scale_shape_manual(values = shps) +
   # scale_color_manual(values = cols) +
   scale_x_continuous(breaks = seq(2016, 2024, 2),
                      limits = c(2015.5, 2025.5)) +
   theme_wet() +
-  labs(y = "Mean Water Level (cm)") +
+  labs(y = "Median Water Level (cm)") +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
 
 
