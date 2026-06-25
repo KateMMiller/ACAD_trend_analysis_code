@@ -806,7 +806,7 @@ acad_vmmi <- plot_vmmi |> filter(grepl(acad_sites, SITE_ID)) |>
                                 grepl("302", SITE_ID) ~ "WMTN",
                                 grepl("303", SITE_ID) ~ "BIGH",
                                 grepl("304", SITE_ID) ~ "GILM",
-                                grepl("305", SITE_ID) ~ "LITH",
+                                grepl("305", SITE_ID) ~ "LIHU",
                                 grepl("306", SITE_ID) ~ "NEMI",
                                 grepl("307", SITE_ID) ~ "GRME",
                                 grepl("308", SITE_ID) ~ "HEBR",

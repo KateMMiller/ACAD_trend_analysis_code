@@ -6,6 +6,7 @@ library(tidyverse)
 library(patchwork)
 # devtools::install_github("katemmiller/climateNETN")
 library(climateNETN)
+library(ggh4x)
 
 theme_wet <- function(){
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
@@ -91,7 +92,7 @@ d95 = "#B8D8ED"
 d50 = "#7FB9DD"
 med = "#1378b5"
 
-p_grme <-
+p_grme1 <-
 ggplot(data = grme_sum |> filter(plot.num == 1)) + theme_wet() +
   geom_ribbon(aes(ymin = min_wl, ymax = max_wl, x = doy,
                   color = "Historic range", fill = "Historic range")) +
@@ -109,7 +110,36 @@ ggplot(data = grme_sum |> filter(plot.num == 1)) + theme_wet() +
                                "Hist. 95% range" = d95,
                                "Hist. 50% range" = d50,
                                "Median water level" = med), name = "Daily Distributions") +
-  labs(y = "Water Level (cm)", x = NULL, title = "Great Meadow") +
+  labs(y = "Water Level (cm)", x = NULL, title = "Great Meadow INT-1") +
+  scale_y_continuous(breaks = c(-60, -30, 0, 30, 60, 90, 120), limits = c(-65, 125)) +
+  scale_x_continuous(breaks = c(135, 166, 196, 227, 258, 288),
+                     labels = c("May-15", "Jun-15", "Jul-15",
+                                "Aug-15", "Sep-15", "Oct-15"),
+                     guide = guide_axis(minor.ticks = T)) +
+  geom_hline(yintercept = 0, color = 'black') +
+  theme(title = element_text(size = 9), legend.position = 'bottom') +
+  guides(fill = guide_legend(nrow = 2, byrow = T),
+         color = guide_legend(nrow = 2, byrow = T))
+
+p_grme5 <-
+  ggplot(data = grme_sum |> filter(plot.num == 5)) + theme_wet() +
+  geom_ribbon(aes(ymin = min_wl, ymax = max_wl, x = doy,
+                  color = "Historic range", fill = "Historic range")) +
+  geom_ribbon(aes(ymin = lower95, ymax = upper95, x = doy,
+                  color = "Hist. 95% range", fill = "Hist. 95% range")) +
+  geom_ribbon(aes(ymin = lower50, ymax = upper50, x = doy,
+                  color = "Hist. 50% range", fill = "Hist. 50% range")) +
+  geom_line(aes(x = doy, y = median_wl, color = "Median water level",
+                fill = "Median water level"), linewidth = 1) +
+  scale_color_manual(values = c("Historic range" = d100,
+                                "Hist. 95% range" = d95,
+                                "Hist. 50% range" = d50,
+                                "Median water level" = med), name = "Daily Distributions") +
+  scale_fill_manual(values = c("Historic range" = d100,
+                               "Hist. 95% range" = d95,
+                               "Hist. 50% range" = d50,
+                               "Median water level" = med), name = "Daily Distributions") +
+  labs(y = "Water Level (cm)", x = NULL, title = "Great Meadow INT-5") +
   scale_y_continuous(breaks = c(-60, -30, 0, 30, 60, 90, 120), limits = c(-65, 125)) +
   scale_x_continuous(breaks = c(135, 166, 196, 227, 258, 288),
                      labels = c("May-15", "Jun-15", "Jul-15",
@@ -149,6 +179,9 @@ ggplot(data = gilm_sum) + theme_wet() +
   theme(title = element_text(size = 9), legend.position = 'bottom') +
   guides(fill = guide_legend(nrow = 2, byrow = T),
          color = guide_legend(nrow = 2, byrow = T))
+
+p_gilm + p_grme1 + p_grme5 + plot_layout(axes = "collect", guides = 'collect') & theme(legend.position = 'bottom')
+ggsave("./results/Great_1_5_vs_Gilmore_water_level_distributions.png", width = 10, height = 5)
 
 plot_bands <- function(df, y, ptitle){
   df$wl_col <- df[,y]
@@ -205,8 +238,10 @@ plot_bands(df = wl_sen, y = "HODG_WL", ptitle = "Hodgdon Swamp")
 plot_bands(df = wl_sen, y = "LIHU_WL", ptitle = "Little Hunter")
 plot_bands(df = wl_sen, y = "NEMI_WL", ptitle = "New Mills Meadow - NW")
 plot_bands(df = wl_sen, y = "WMTN_WL", ptitle = "Western Mtn. Swamp")
+plot_bands(df = wl_sen, y = "WMTN_WL", ptitle = "Western Mtn. Swamp")
 
-p_grme + p_gilm + plot_layout(axes = "collect", guides = 'collect') & theme(legend.position = 'bottom')
+
+p_grme1 + p_grme5 + p_gilm + plot_layout(axes = "collect", guides = 'collect') & theme(legend.position = 'bottom')
 
 # ggsave("./results/Great_vs_Gilmore_water_level_distributions.png", width = 10, height = 6)
 
@@ -312,7 +347,7 @@ well_gs_month <- well_prp_long2 |> group_by(Year, mon, site) |>
 
 
 well_gs_prop1 <- well_prp_long2 |> mutate(over_0 = ifelse(water_level_cm >= 0 & !is.na(water_level_cm), 1, 0),
-                                          bet_0_neg30 = ifelse(water_level_cm <= 0 & water_level_cm >= -30 &
+                                          bet_0_neg30 = ifelse(water_level_cm < 0 & water_level_cm >= -30 &
                                                                  !is.na(water_level_cm), 1, 0),
                                           under_neg30 = ifelse(water_level_cm< -30 & !is.na(water_level_cm), 1, 0),
                                           num_logs = ifelse(!is.na(water_level_cm) & !is.na(water_level_cm), 1, NA))
@@ -324,14 +359,17 @@ well_gs_prop <- well_gs_prop1 |> group_by(Year, site) |>
                                     sum(num_logs, na.rm = TRUE))*100,
             prop_under_neg30cm = (sum(under_neg30, na.rm = TRUE)/
                                     sum(num_logs, na.rm = TRUE))*100,
+            check = prop_over_0cm + prop_bet_0_neg30cm + prop_under_neg30cm,
             .groups = 'drop')
+
 
 gs_WL_stats <- list(well_gs_stats, well_gs_month[,c("Year","site","GS_change")], well_gs_prop) |>
   reduce(left_join, by = c("Year", "site"))
 
 # Missing water level data from 2017, change to NA
 metrics <- c("WL_mean","WL_sd","WL_min","WL_max", "max_inc","max_dec", "prop_GS_comp",
-             "GS_change", "prop_over_0cm","prop_bet_0_neg30cm","prop_under_neg30cm" )
+             "GS_change", "prop_over_0cm","prop_bet_0_neg30cm","prop_under_neg30cm" ,
+             "check")
 
 #gs_WL_stats[gs_WL_stats$site=="DUCK_WL" & gs_WL_stats$Year == 2017, metrics] <- NA
 # Logger failed in DUCK in 2017
@@ -389,32 +427,85 @@ wl_stats_comb2$HGM_Class[wl_stats_comb2$site_name %in% c("GRME_03")] <- "Slope"
 wl_prop_long <- wl_stats_comb2 |> select(Year, site_name, HGM_Class,
                                          prop_over_0cm, prop_bet_0_neg30cm, prop_under_neg30cm) |>
   pivot_longer(cols = starts_with("prop"), names_to = "level", values_to = "prop") |>
-  mutate(level = case_when(grepl("over_0cm", level) ~ "surface",
-                           grepl("bet_0_neg30", level) ~ "saturated",
-                           grepl("under_neg30", level) ~ "dry"))
+  mutate(level = factor(case_when(grepl("over_0cm", level) ~ "surface water",
+                                  grepl("bet_0_neg30", level) ~ "saturated",
+                                  grepl("under_neg30", level) ~ "below 30cm"),
+                        levels = c("surface water", "saturated", "below 30cm")))
 
 head(wl_prop_long)
 
-wl_prop_long$site_name <- factor(wl_prop_long$site_name,
-                                  levels = c("BIGH", "DUCK", "GILM", "HEBR",
-                                             "HODG", "LIHU", "NEMI", "WMTN",
-                                             "GRME_01", "GRME_02", "GRME_03",
-                                             "GRME_04", "GRME_05", "GRME_06"))
-table(wl_prop_long$HGM_Class,wl_prop_long$site_name)
+# wl_prop_long$site_name <- factor(wl_prop_long$site_name,
+#                                   levels = c("BIGH", "DUCK", "GILM", "HEBR",
+#                                              "HODG", "LIHU", "NEMI", "WMTN",
+#                                              "GRME_01", "GRME_02", "GRME_03",
+#                                              "GRME_04", "GRME_05", "GRME_06"))
+wl_prop_long <- wl_prop_long |> mutate(hgm_abbr = case_when(HGM_Class == "Flats" ~ "FLT",
+                                                            HGM_Class == "Depression" ~ "DEP",
+                                                            HGM_Class == "Riverine" ~ "RIV",
+                                                            HGM_Class == "Slope" ~ 'SLP'),
+                                       site_hgm = paste0(site_name, "-", hgm_abbr))
+
+unique(wl_prop_long$site_hgm)
+
+wl_prop_long$site_hgm <- factor(wl_prop_long$site_hgm,
+                                levels = c("DUCK-DEP", "NEMI-DEP", "GRME_02-DEP", "GRME_04-DEP", "GRME_06-DEP",
+                                           "GILM-RIV", "HEBR-RIV", "LIHU-RIV", "GRME_01-RIV", "GRME_05-RIV",
+                                           "HODG-SLP", "WMTN-SLP", "GRME_03-SLP", "BIGH-FLT"))
+
 #write.csv(wl_stats_comb2, "./results/water_level_statistics_SEN_GRME.csv", row.names = F)
 
-ggplot(wl_prop_long |> filter(Year >= 2016),
-       aes(x = Year, y = prop, group = level, fill = level)) +
+wl_prop_long <- wl_prop_long |> mutate(site_type = factor(ifelse(!grepl("GRME", site_name),"SEN", "INT"),
+                                                          levels = c("SEN", "INT")))
+
+table(wl_prop_long$hgm_abbr)
+
+df <- wl_prop_long |> filter(Year >= 2016) |> filter(grepl("GRME|GILM", site_name)) |> filter(hgm_abbr == "RIV")
+
+riv <-
+ggplot(df, aes(x = Year, y = prop, group = level, fill = level)) +
   geom_bar(stat = 'identity', color = 'dimgrey') +
-  facet_wrap(~site_name, ncol = 4) +
-  scale_fill_manual(values = c("#fee08b", "#66c2a5", "#3288bd"), name = "Water Level Class") +
+  facet_nested_wrap(~site_type + site_name, nrow = 1) +
+  scale_fill_manual(values = c("#3288bd", "#7DC780", "#ffd16e"),
+                    name = "Water Level Class") +
   theme_wet() +
   scale_x_continuous(breaks = seq(2016, 2024, 2),
                      limits = c(2015.5, 2025.5)) +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
   labs(x = NULL, y = "Proportion of growing season")
 
-#++++ ENDED HERE. ORDER SITE BY HGM
+df2 <- wl_prop_long |> filter(Year >= 2016) |> filter(hgm_abbr == "DEP")
+dep <-
+  ggplot(df2, aes(x = Year, y = prop, group = level, fill = level)) +
+  geom_bar(stat = 'identity', color = 'dimgrey') +
+  facet_nested_wrap(~site_type + site_name, nrow = 1) +
+  scale_fill_manual(values = c("#3288bd", "#7DC780", "#ffd16e"),
+                    name = "Water Level Class") +
+  theme_wet() +
+  scale_x_continuous(breaks = seq(2016, 2024, 2),
+                     limits = c(2015.5, 2025.5)) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
+  labs(x = NULL, y = "Proportion of growing season")
+
+head(wl_prop_long)
+
+df3 <- wl_prop_long |> filter(Year >= 2016) |> filter(hgm_abbr == "SLP")
+slp <-
+  ggplot(df3, aes(x = Year, y = prop, group = level, fill = level)) +
+  geom_bar(stat = 'identity', color = 'dimgrey') +
+  facet_nested_wrap(~site_type + site_name, nrow = 1) +
+  scale_fill_manual(values = c("#3288bd", "#7DC780", "#ffd16e"),
+                    name = "Water Level Class") +
+  theme_wet() +
+  scale_x_continuous(breaks = seq(2016, 2024, 2),
+                     limits = c(2015.5, 2025.5)) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
+  labs(x = NULL, y = "Proportion of growing season")
+
+riv
+dep
+slp
+
+
 
 cols = c("BIGH" = "#d53e4f",
          "DUCK" = "#f46d43",

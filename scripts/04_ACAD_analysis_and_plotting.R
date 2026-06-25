@@ -7,10 +7,14 @@ library(broom.mixed)
 library(patchwork)
 library(ggrepel)
 library(lmerTest)
+library(tidyverse)
+library(ggrepel)
+library(wetlandACAD)
+library(vegan)
 
 # All site table of ratings
 vmmi_all <- read.csv("./results/VegetationMMI_NWCA_PROB_ACAD_GRME_most_recent_REF.csv")
-vmmi_all$HGM_Class[grepl("LIHU", vmmi_all$Code)] <- "Riverine"
+
 vmmi_pct_rat <- vmmi_all |>
   mutate(vmmi_rating_orig = ifelse(vmmi > 65.22746, "Good",
                                    ifelse(vmmi < 52.785, "Poor", "Fair")))
@@ -55,7 +59,7 @@ vmmi_pct_rat_new2
 # Split out ACAD sites for analysis and plotting
 vmmi_acad <- read.csv("./data/ACAD_data/Vegetation_MMI_COW_2011-2025_ACAD_RAM_SENT_GRME.csv") |>
   mutate(site_type = ifelse(Panel == 0, "SENT", "RAM"))
-vmmi_acad$HGM_Class[grepl("LITH", vmmi_acad$Code)] <- "Riverine"
+table(vmmi_acad$Code, vmmi_acad$HGM_Class)
 
 vmmi_ram <- vmmi_acad |> filter(grepl("R-", Code))
 vmmi_ram_status <- vmmi_ram |> filter(Year > 2020)
@@ -107,8 +111,6 @@ theme_wet <- function(){
 #---- Sentinel plot -----
 vmmi_sen <- vmmi_acad |> filter(site_type == "SENT")
 vmmi_sen$Code[vmmi_sen$Code == "GRME"] <- "GRME (IAH)"
-vmmi_sen$HGM_Class[vmmi_sen$Code == "GILM"] <- "Riverine"
-vmmi_sen$HGM_Class[vmmi_sen$Code == "LITH"] <- "Riverine"
 
 table(vmmi_sen$Code)
 head(vmmi_sen)
@@ -270,7 +272,7 @@ meanC_est <- data.frame(tidy(meancmod_hgm) |> filter(effect == "fixed")) |> sele
 # for Supplemental table S2
 # Full
 tol_est <-
-  data.frame(tidy(tolmod_full) |> filter(effect == "fixed")) |> select(term, estimate, std.error) |>
+  data.frame(tidy(tolmod_full) |> filter(effect == "fixed")) |> select(term, estimate, std.error, p.value) |>
   mutate(HGM_Class = ifelse(grepl("HGM_Class", term), gsub("HGM_Class|year_cen:", "", term), "Depression"),
          type = ifelse(grepl("year_cen", term), "slope", "intercept"),
          add = case_when(HGM_Class == "Depression" ~ 0,
@@ -320,7 +322,7 @@ ggplot(tol_est_wide2, aes(x = slope, y = HGM_Class)) + theme_wet() +
 
 # Main
 tol_est_main <-
-  data.frame(tidy(tolmod_main) |> filter(effect == "fixed")) |> select(term, estimate, std.error) |>
+  data.frame(tidy(tolmod_main) |> filter(effect == "fixed")) |> select(term, estimate, std.error, p.value) |>
   mutate(HGM_Class = ifelse(grepl("HGM_Class", term), gsub("HGM_Class|year_cen:", "", term), "Depression"),
          type = ifelse(grepl("year_cen", term), "slope", "intercept"),
          add = case_when(HGM_Class == "Depression" ~ 0,
@@ -340,7 +342,8 @@ tol_est_m2 <- left_join(tol_est_main,
   arrange(type, HGM_Class) |>
   mutate(lowerCI = add + conf.low,
          upperCI = add + conf.high)
-head(tol_est_m2)
+
+tol_est_m2
 
 tol_est_m_wide <- tol_est_m2 |> select(HGM_Class, type, estimate = est_corr) |>
   pivot_wider(names_from = type, values_from = c(estimate)) |>
@@ -358,11 +361,20 @@ tol_ci_trend <- tidy(tolmod_trend, effects = 'fixed', conf.int = T) |> data.fram
 tol_ci_HGM <- tidy(tolmod_hgm, effects = 'fixed', conf.int = T) |> data.frame()
 
 
-tol_est <- data.frame(tidy(tolmod_hgm) |> filter(effect == "fixed")) |> select(term, estimate, std.error) |>
+tol_est <- data.frame(tidy(tolmod_hgm) |> filter(effect == "fixed")) |> select(term, estimate, std.error, p.value) |>
   mutate(HGM_Class = ifelse(grepl("HGM_Class", term), gsub("HGM_Class", "", term), "Depression"),
          add = ifelse(HGM_Class == "Depression", 0, .data$estimate[.data$HGM_Class == "Depression"]),
          intercept = ifelse(HGM_Class == "Depression", estimate, estimate + add),
          resp = "Cover_Tolerant")
+
+tidy(tolmod_hgm, effects = 'fixed', conf.int = T) |> data.frame()
+
+tol_est_hgm <- left_join(tol_est,
+                         tol_ci_HGM |> select(term, conf.low, conf.high), by = c("term")) |>
+  arrange( HGM_Class) |>
+  mutate(lowerCI = add + conf.low,
+         upperCI = add + conf.high)
+
 #++++ End % cover tolerant ++++
 
 bryo_est <- data.frame(tidy(bryomod_hgm) |> filter(effect == "fixed")) |> select(term, estimate, std.error) |>
@@ -567,6 +579,8 @@ vmmi_acad <- read.csv("./data/ACAD_data/Vegetation_MMI_2011-2025_ACAD_RAM_SENT_G
              (site_type == "ACAD Sent." & Year == 2021))
 
 table(vmmi_acad$Year, vmmi_acad$site_type)
+table(vmmi_acad$HGM_Class, vmmi_acad$Code)
+vmmi_acad$Code[vmmi_acad$Code == "LITH"] <- "LIHU"
 
 vmmi_comb <- rbind(vmmi_prob21, vmmi_ref, vmmi_acad)
 table(complete.cases(vmmi_comb$vmmi))
@@ -586,6 +600,7 @@ vmmi_buff$HGM_Class_clean <-
             vmmi_buff$HGM_Class %in% c("Riverine", "RIVERINE") ~ "Riverine",
             vmmi_buff$HGM_Class %in% c("SLOPE", "Slope") ~ "Slope",
             TRUE ~ "Unknown")
+
 vmmi_buff2 <- vmmi_buff |> filter(!HGM_Class_clean %in% c("Unknown", "Lacustrine")) |>
   mutate(stress_total = AA + BUFF)
 
@@ -604,13 +619,14 @@ ggplot(vmmi_buff2, aes(x = BUFF, y = vmmi)) +
 
 buffmod <- lm(vmmi ~ BUFF, data = vmmi_buff2[-34,])
 summary(buffmod)
-plot(buffmod)
+#plot(buffmod)
 
 aamod_full <- lm(vmmi ~ AA * HGM_Class_clean, data = vmmi_buff2)
 aamod_add <- lm(vmmi ~ AA + HGM_Class_clean, data = vmmi_buff2)
 aamod_HGM <- lm(vmmi ~ HGM_Class_clean, data = vmmi_buff2)
 aamod_AA <- lm(vmmi ~ AA, data = vmmi_buff2)
 
+options(digits = 6)
 arrange(AIC(aamod_full, aamod_add, aamod_HGM, aamod_AA), AIC)
 
 #aamod_add
@@ -634,7 +650,7 @@ arrange(round(AIC(stressmod_full, stressmod_add,
 
 summary(stressmod_add) # R2 = 0.33 #EPA Prob; 0.39 for EPA Prob and ACAD RAM
 par(mfrow = c(2,2))
-plot(stressmod_add) # not bad!
+#plot(stressmod_add) # not bad!
 par(mfrow = c(1,1))
 
 hist(residuals(stressmod_add)) # not bad!
@@ -711,14 +727,14 @@ stressmod_fulla <- lm(vmmi ~ stress_total * HGM_Class_clean, data = vmmi_buffa)
 stressmod_adda <- lm(vmmi ~ stress_total + HGM_Class_clean, data = vmmi_buffa)
 stressmod_stressa <- lm(vmmi ~ stress_total, data = vmmi_buffa)
 stressmod_hgma <- lm(vmmi ~ HGM_Class_clean, data = vmmi_buffa)
-stressmod <- lm(vmmi ~ 1, vmmi_buffa)
+stressmod_null <- lm(vmmi ~ 1, vmmi_buffa)
 
 arrange(round(AIC(stressmod_fulla, stressmod_adda,
-          stressmod_hgma, stressmod_stressa, stressmod),2), AIC)
+          stressmod_hgma, stressmod_stressa, stressmod_null),2), AIC)
 
-summary(stressmod_adda) # R2 = 0.57
+summary(stressmod_adda) # R2 = 0.56
 par(mfrow = c(2,2))
-plot(stressmod_adda) # not bad!
+# plot(stressmod_adda) # not bad!
 par(mfrow = c(1,1))
 hist(residuals(stressmod_adda)) # not bad!
 
@@ -847,7 +863,7 @@ sen_spp <- sen_spp1 |>
                               grepl("302", SITE_ID) ~ "WMTN",
                               grepl("303", SITE_ID) ~ "BIGH",
                               grepl("304", SITE_ID) ~ "GILM",
-                              grepl("305", SITE_ID) ~ "LITH",
+                              grepl("305", SITE_ID) ~ "LIHU",
                               grepl("306", SITE_ID) ~ "NEMI",
                               grepl("307", SITE_ID) ~ "GRME",
                               grepl("308", SITE_ID) ~ "HEBR",
@@ -901,7 +917,7 @@ vmmi <- read.csv('./data/ACAD_data/Vegetation_MMI_COW_2011-2025_ACAD_RAM_SENT_GR
 nmds2 <- metaMDS(spp_wide2[,6:ncol(spp_wide2)], distance = 'jaccard', k = 2, maxit = 100,
                  autotransform = FALSE)
 stressplot(nmds2)
-nmds2 # stress = 0.135
+nmds2 # stress = 0.134
 
 spp_env <- left_join(spp_wide |> select(SiteCode:cycle),
                      vmmi,

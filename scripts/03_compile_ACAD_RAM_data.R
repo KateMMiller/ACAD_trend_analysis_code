@@ -23,6 +23,9 @@ vmmi <- left_join(vmmi1,
   select(Code = SiteCode, Panel, X = xCoordinate, Y = yCoordinate, Year, meanC, Bryophyte_Cover,
          Invasive_Cover, Cover_Tolerant, vmmi, vmmi_rating, vmmi_rating_orig, FWS_Class_Code, HGM_Class)
 
+vmmi$HGM_Class[vmmi$Code %in% c("R-04", "R-19", "R-31", "GILM", "LITH", "LIHU")] <- "Riverine"
+vmmi$HGM_Class[vmmi$Code %in% c("R-13")] <- "Depression"
+
 # Great Meadow RAM data
 loc_grme <- read.csv("./data/ACAD_data/FOA_veg_data_package_2025/locations.csv") |> select(Code, FWS_Class_Code, HGM_Class)
 vmmi_grme1 <- read.csv("./data/ACAD_data/ACAD_Wetland_VegMMI_20260126.csv")
@@ -33,9 +36,16 @@ vmmi_grme <- left_join(vmmi_grme1,
   select(Code, Panel, X = xCoordinate, Y = yCoordinate, Year, meanC, Bryophyte_Cover,
          Invasive_Cover, Cover_Tolerant, vmmi, vmmi_rating, vmmi_rating_orig, FWS_Class_Code, HGM_Class)
 
+vmmi_grme$HGM_Class[vmmi_grme$Code %in% c("GRME01", "GRME05", "GRME10")] <- "Riverine"
+vmmi_grme$HGM_Class[vmmi_grme$Code %in% c("GRME02", "GRME04", "GRME06", "GRME08", "GRME09")] <- "Depression"
+vmmi_grme$HGM_Class[vmmi_grme$Code %in% c("GRME03")] <- "Slope"
+
 # Sentinel data
 vmmi_sent1 <- read.csv("./data/EPA_compiled/Vegetation_MMI_2011-2021_ACAD_REF.csv") |>
   select(-WETCLS_HGM)
+vmmi_sent1$HGM_Class[vmmi_sent1$local_code %in% c("GILM", "LITH", "LIHU")] <- "Riverine"
+table(vmmi_sent1$local_code, vmmi_sent1$HGM_Class)
+vmmi_sent1$local_code[vmmi_sent1$local_code == "LITH"] <- "LIHU"
 
 # Bring in FWS Code and HGM code
 epa_site <- read.csv("./data/EPA_compiled/Site_Information_2011-2021.csv") |>
@@ -61,6 +71,8 @@ vmmi_sent3 <- vmmi_sent2 |>
   select(Code = local_code, Panel, X, Y, Year = YEAR, meanC, Bryophyte_Cover = bryo_cov,
          Invasive_Cover = inv_cov, Cover_Tolerant = disttol_cov, vmmi, vmmi_rating,
          vmmi_rating_orig, FWS_Class_Code = WETCLS_EVL, HGM_Class)
+
+vmmi_sent3$HGM_Class[vmmi_sent3$Code %in% c("GILM", "LITH", "LIHU")] <- "Riverine"
 
 # combine sites
 vmmi_comb <- rbind(vmmi, vmmi_grme, vmmi_sent3)
@@ -170,7 +182,7 @@ vmmi_cow_comb <- left_join(vmmi_comb, cow_comb, by = c("Code", "Year")) |>
   mutate(site_type = case_when(grepl("R-", Code) ~ "ACAD RAM",
                                grepl("GRME0|GRME10", Code) ~ "ACAD GRME",
                                Code %in% c("BIGH", "DUCK", "FRAZ", "GILM", "GRME", "HEBR",
-                                           "HODG", "LITH", "NEMI", "WMTN") ~ "ACAD Sent.",
+                                           "HODG", "LIHU", "NEMI", "WMTN") ~ "ACAD Sent.",
                                grepl("GIME", Code) ~ "ACAD GILM",
                                TRUE ~ "UNK"))
 head(vmmi_cow_comb)
@@ -199,6 +211,11 @@ locev_gm <- left_join(grme_loc |> select(Code, FWS_Class_Code, HGM_Class, HGM_Su
                       by = "Code")
 
 locev <- rbind(locev1, locev_gm)
+locev$HGM_Class[locev$Code %in% c("R-04", "R-19", "R-31", "GILM", "LITH", "LIHU")] <- "Riverine"
+locev$HGM_Class[locev$Code %in% c("R-13")] <- "Depression"
+locev$HGM_Class[locev$Code %in% c("GRME01", "GRME05", "GRME10")] <- "Riverine"
+locev$HGM_Class[locev$Code %in% c("GRME02", "GRME04", "GRME06", "GRME08", "GRME09")] <- "Depression"
+locev$HGM_Class[locev$Code %in% c("GRME03")] <- "Slope"
 
 # Need to adjust stressors a bit based on how we use them.
 # -- 1. Use presence of invasives from visits for invasive stressor in AA and
@@ -300,7 +317,7 @@ stress_all <- stress_all |>
                           grepl("ME-HP302", Code) ~ "WMTN",
                           grepl("ME-HP303", Code) ~ "BIGH",
                           grepl("ME-HP304", Code) ~ "GILM",
-                          grepl("ME-HP305", Code) ~ "LITH",
+                          grepl("ME-HP305", Code) ~ "LIHU",
                           grepl("ME-HP306", Code) ~ "NEMI",
                           grepl("ME-HP307", Code) ~ "GRME",
                           grepl("ME-HP308", Code) ~ "HEBR",
