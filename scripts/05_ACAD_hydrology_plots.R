@@ -92,114 +92,8 @@ d95 = "#B8D8ED"
 d50 = "#7FB9DD"
 med = "#1378b5"
 
-p_grme1 <-
-ggplot(data = grme_sum |> filter(plot.num == 1)) + theme_wet() +
-  geom_ribbon(aes(ymin = min_wl, ymax = max_wl, x = doy,
-                  color = "Historic range", fill = "Historic range")) +
-  geom_ribbon(aes(ymin = lower95, ymax = upper95, x = doy,
-                  color = "Hist. 95% range", fill = "Hist. 95% range")) +
-  geom_ribbon(aes(ymin = lower50, ymax = upper50, x = doy,
-                  color = "Hist. 50% range", fill = "Hist. 50% range")) +
-  geom_line(aes(x = doy, y = median_wl, color = "Median water level",
-                fill = "Median water level"), linewidth = 1) +
-  scale_color_manual(values = c("Historic range" = d100,
-                                "Hist. 95% range" = d95,
-                                "Hist. 50% range" = d50,
-                                "Median water level" = med), name = "Daily Distributions") +
-  scale_fill_manual(values = c("Historic range" = d100,
-                               "Hist. 95% range" = d95,
-                               "Hist. 50% range" = d50,
-                               "Median water level" = med), name = "Daily Distributions") +
-  labs(y = "Water Level (cm)", x = NULL, title = "Great Meadow INT-1") +
-  scale_y_continuous(breaks = c(-60, -30, 0, 30, 60, 90, 120), limits = c(-65, 125)) +
-  scale_x_continuous(breaks = c(135, 166, 196, 227, 258, 288),
-                     labels = c("May-15", "Jun-15", "Jul-15",
-                                "Aug-15", "Sep-15", "Oct-15"),
-                     guide = guide_axis(minor.ticks = T)) +
-  geom_hline(yintercept = 0, color = 'black') +
-  theme(title = element_text(size = 9), legend.position = 'bottom') +
-  guides(fill = guide_legend(nrow = 2, byrow = T),
-         color = guide_legend(nrow = 2, byrow = T))
-
-p_grme5 <-
-  ggplot(data = grme_sum |> filter(plot.num == 5)) + theme_wet() +
-  geom_ribbon(aes(ymin = min_wl, ymax = max_wl, x = doy,
-                  color = "Historic range", fill = "Historic range")) +
-  geom_ribbon(aes(ymin = lower95, ymax = upper95, x = doy,
-                  color = "Hist. 95% range", fill = "Hist. 95% range")) +
-  geom_ribbon(aes(ymin = lower50, ymax = upper50, x = doy,
-                  color = "Hist. 50% range", fill = "Hist. 50% range")) +
-  geom_line(aes(x = doy, y = median_wl, color = "Median water level",
-                fill = "Median water level"), linewidth = 1) +
-  scale_color_manual(values = c("Historic range" = d100,
-                                "Hist. 95% range" = d95,
-                                "Hist. 50% range" = d50,
-                                "Median water level" = med), name = "Daily Distributions") +
-  scale_fill_manual(values = c("Historic range" = d100,
-                               "Hist. 95% range" = d95,
-                               "Hist. 50% range" = d50,
-                               "Median water level" = med), name = "Daily Distributions") +
-  labs(y = "Water Level (cm)", x = NULL, title = "Great Meadow INT-5") +
-  scale_y_continuous(breaks = c(-60, -30, 0, 30, 60, 90, 120), limits = c(-65, 125)) +
-  scale_x_continuous(breaks = c(135, 166, 196, 227, 258, 288),
-                     labels = c("May-15", "Jun-15", "Jul-15",
-                                "Aug-15", "Sep-15", "Oct-15"),
-                     guide = guide_axis(minor.ticks = T)) +
-  geom_hline(yintercept = 0, color = 'black') +
-  theme(title = element_text(size = 9), legend.position = 'bottom') +
-  guides(fill = guide_legend(nrow = 2, byrow = T),
-         color = guide_legend(nrow = 2, byrow = T))
-
-
-p_gilm <-
-ggplot(data = gilm_sum) + theme_wet() +
-  geom_ribbon(aes(ymin = min_wl, ymax = max_wl, x = doy,
-                  color = "Historic range", fill = "Historic range")) +
-  geom_ribbon(aes(ymin = lower95, ymax = upper95, x = doy,
-                  color = "Hist. 95% range", fill = "Hist. 95% range")) +
-  geom_ribbon(aes(ymin = lower50, ymax = upper50, x = doy,
-                  color = "Hist. 50% range", fill = "Hist. 50% range")) +
-  geom_line(aes(x = doy, y = median_wl, color = "Median water level",
-                fill = "Median water level"), linewidth = 1) +
-  scale_color_manual(values = c("Historic range" = d100,
-                                "Hist. 95% range" = d95,
-                                "Hist. 50% range" = d50,
-                                "Median water level" = med), name = "Daily Distributions") +
-  scale_fill_manual(values = c("Historic range" = d100,
-                                "Hist. 95% range" = d95,
-                                "Hist. 50% range" = d50,
-                                "Median water level" = med), name = "Daily Distributions") +
-  labs(y = "Water Level (cm)", x = NULL, title = "Gilmore Meadow") +
-  scale_y_continuous(breaks = c(-60, -30, 0, 30, 60, 90, 120), limits = c(-65, 125)) +
-  scale_x_continuous(breaks = c(135, 166, 196, 227, 258, 288),
-                     labels = c("May-15", "Jun-15", "Jul-15",
-                                "Aug-15", "Sep-15", "Oct-15"),
-                     guide = guide_axis(minor.ticks = T)) +
-  geom_hline(yintercept = 0, color = 'black') +
-  theme(title = element_text(size = 9), legend.position = 'bottom') +
-  guides(fill = guide_legend(nrow = 2, byrow = T),
-         color = guide_legend(nrow = 2, byrow = T))
-
-p_gilm + p_grme1 + p_grme5 + plot_layout(axes = "collect", guides = 'collect') & theme(legend.position = 'bottom')
-ggsave("./results/Great_1_5_vs_Gilmore_water_level_distributions.png", width = 10, height = 5)
-
-plot_bands <- function(df, y, ptitle){
-  df$wl_col <- df[,y]
-
-  df_sum <-
-  df |> filter(Year >= 2016) |>
-    summarize(num_samps = sum(!is.na(wl_col)),
-              median_wl = median(wl_col, na.rm = T),
-              min_wl = min(wl_col, na.rm = T),
-              max_wl = max(wl_col, na.rm = T),
-              lower95 = quantile(wl_col, 0.025, na.rm = T),
-              upper95 = quantile(wl_col, 0.975, na.rm = T),
-              lower50 = quantile(wl_col, 0.25, na.rm = T),
-              upper50 = quantile(wl_col, 0.75, na.rm = T),
-              .by = c(doy))
-
-  p <- suppressWarnings(
-  ggplot(data = df_sum) + theme_wet() +
+grme_bands <- function(plot_num){
+  ggplot(data = grme_sum |> filter(plot.num == 1)) + theme_wet() +
     geom_ribbon(aes(ymin = min_wl, ymax = max_wl, x = doy,
                     color = "Historic range", fill = "Historic range")) +
     geom_ribbon(aes(ymin = lower95, ymax = upper95, x = doy,
@@ -216,32 +110,96 @@ plot_bands <- function(df, y, ptitle){
                                  "Hist. 95% range" = d95,
                                  "Hist. 50% range" = d50,
                                  "Median water level" = med), name = "Daily Distributions") +
-    labs(y = "Water Level (cm)", x = NULL, title = ptitle) +
-    # scale_y_continuous(breaks = c(-60, -30, 0, 30, 60, 90, 120), limits = c(-65, 125)) +
+    labs(y = "Water Level (cm)", x = NULL, title = "Great Meadow INT-1") +
+    scale_y_continuous(breaks = c(-60, -30, 0, 30, 60, 90, 120), limits = c(-65, 125)) +
     scale_x_continuous(breaks = c(135, 166, 196, 227, 258, 288),
                        labels = c("May-15", "Jun-15", "Jul-15",
                                   "Aug-15", "Sep-15", "Oct-15"),
                        guide = guide_axis(minor.ticks = T)) +
     geom_hline(yintercept = 0, color = 'black') +
+    geom_hline(yintercept = -30, color = 'black', lty = 2) +
     theme(title = element_text(size = 9), legend.position = 'bottom') +
     guides(fill = guide_legend(nrow = 2, byrow = T),
-           color = guide_legend(nrow = 2, byrow = T))
+           color = guide_legend(nrow = 2, byrow = T))}
+
+p_grme1 <- grme_bands(1)
+p_grme5 <- grme_bands(5)
+
+p_grme2 <- grme_bands(2)
+p_grme4 <- grme_bands(4)
+p_grme6 <- grme_bands(6)
+
+p_grme3 <- grme_bands(3)
+
+sen_bands <- function(df, y, ptitle){
+  df$wl_col <- df[,y]
+
+  df_sum <-
+    df |> filter(Year >= 2016) |>
+    summarize(num_samps = sum(!is.na(wl_col)),
+              median_wl = median(wl_col, na.rm = T),
+              min_wl = min(wl_col, na.rm = T),
+              max_wl = max(wl_col, na.rm = T),
+              lower95 = quantile(wl_col, 0.025, na.rm = T),
+              upper95 = quantile(wl_col, 0.975, na.rm = T),
+              lower50 = quantile(wl_col, 0.25, na.rm = T),
+              upper50 = quantile(wl_col, 0.75, na.rm = T),
+              .by = c(doy))
+
+  p <- suppressWarnings(
+    ggplot(data = df_sum) + theme_wet() +
+      geom_ribbon(aes(ymin = min_wl, ymax = max_wl, x = doy,
+                      color = "Historic range", fill = "Historic range")) +
+      geom_ribbon(aes(ymin = lower95, ymax = upper95, x = doy,
+                      color = "Hist. 95% range", fill = "Hist. 95% range")) +
+      geom_ribbon(aes(ymin = lower50, ymax = upper50, x = doy,
+                      color = "Hist. 50% range", fill = "Hist. 50% range")) +
+      geom_line(aes(x = doy, y = median_wl, color = "Median water level",
+                    fill = "Median water level"), linewidth = 1) +
+      scale_color_manual(values = c("Historic range" = d100,
+                                    "Hist. 95% range" = d95,
+                                    "Hist. 50% range" = d50,
+                                    "Median water level" = med), name = "Daily Distributions") +
+      scale_fill_manual(values = c("Historic range" = d100,
+                                   "Hist. 95% range" = d95,
+                                   "Hist. 50% range" = d50,
+                                   "Median water level" = med), name = "Daily Distributions") +
+      labs(y = "Water Level (cm)", x = NULL, title = ptitle) +
+      scale_y_continuous(breaks = c(-60, -30, 0, 30, 60, 90, 120), limits = c(-65, 125)) +
+      # scale_y_continuous(breaks = c(-60, -30, 0, 30, 60, 90, 120), limits = c(-65, 125)) +
+      scale_x_continuous(breaks = c(135, 166, 196, 227, 258, 288),
+                         labels = c("May-15", "Jun-15", "Jul-15",
+                                    "Aug-15", "Sep-15", "Oct-15"),
+                         guide = guide_axis(minor.ticks = T)) +
+      geom_hline(yintercept = 0, color = 'black') +
+      geom_hline(yintercept = -30, color = 'black', lty = 2) +
+      theme(title = element_text(size = 9), legend.position = 'bottom') +
+      guides(fill = guide_legend(nrow = 2, byrow = T),
+             color = guide_legend(nrow = 2, byrow = T))
   )
   return(p)
-  }
-
-plot_bands(df = wl_sen, y = "BIGH_WL", ptitle = "Big Heath")
-plot_bands(df = wl_sen, y = "DUCK_WL", ptitle = "Duck Pond")
-plot_bands(df = wl_sen, y = "GILM_WL", ptitle = "Gilmore Meadow")
-plot_bands(df = wl_sen, y = "HEBR_WL", ptitle = "Heath Brook")
-plot_bands(df = wl_sen, y = "HODG_WL", ptitle = "Hodgdon Swamp")
-plot_bands(df = wl_sen, y = "LIHU_WL", ptitle = "Little Hunter")
-plot_bands(df = wl_sen, y = "NEMI_WL", ptitle = "New Mills Meadow - NW")
-plot_bands(df = wl_sen, y = "WMTN_WL", ptitle = "Western Mtn. Swamp")
-plot_bands(df = wl_sen, y = "WMTN_WL", ptitle = "Western Mtn. Swamp")
+}
 
 
+p_bigh <- sen_bands(df = wl_sen, y = "BIGH_WL", ptitle = "Big Heath")
+p_duck <- sen_bands(df = wl_sen, y = "DUCK_WL", ptitle = "Duck Pond")
+p_gilm <- sen_bands(df = wl_sen, y = "GILM_WL", ptitle = "Gilmore Meadow")
+p_hebr <- sen_bands(df = wl_sen, y = "HEBR_WL", ptitle = "Heath Brook")
+p_hidg <- sen_bands(df = wl_sen, y = "HODG_WL", ptitle = "Hodgdon Swamp")
+p_lihu <- sen_bands(df = wl_sen, y = "LIHU_WL", ptitle = "Little Hunter")
+p_nemi <- sen_bands(df = wl_sen, y = "NEMI_WL", ptitle = "New Mills Meadow - NW")
+p_wmtn <- sen_bands(df = wl_sen, y = "WMTN_WL", ptitle = "Western Mtn. Swamp")
+
+# Riverine
 p_grme1 + p_grme5 + p_gilm + plot_layout(axes = "collect", guides = 'collect') & theme(legend.position = 'bottom')
+p_gilm + p_grme1 + p_grme5 + plot_layout(axes = "collect", guides = 'collect') & theme(legend.position = 'bottom')
+ggsave("./results/Great_1_5_vs_Gilmore_water_level_distributions.png", width = 10, height = 5)
+
+p_hebr + p_lihu + p_gilm + plot_layout(axes = "collect", guides = "collect") & theme(legend.position = 'bottom')
+
+# Depression
+p_duck + p_nemi + plot_layout(axes = "collect", guides = "collect") & theme(legend.position = 'bottom')
+
 
 # ggsave("./results/Great_vs_Gilmore_water_level_distributions.png", width = 10, height = 6)
 
@@ -505,8 +463,6 @@ riv
 dep
 slp
 
-
-
 cols = c("BIGH" = "#d53e4f",
          "DUCK" = "#f46d43",
          "GILM" = "#fdae61",
@@ -584,3 +540,42 @@ ggplot(wl_stats_comb2 |> filter(Year >= 2016) |>
 
 
 ggsave("./results/GS_water_level_stats.png", width = 10, height = 6)
+
+#--- growing season precipitation ---
+library(tidyverse)
+#pak::pak('katemmiller/climateNETN')
+library(climateNETN)
+library(patchwork)
+data("NETN_clim_norms")
+data("NETN_clim_annual")
+acad_norm_gsppt <- NETN_clim_norms |> filter(UnitCode == "ACAD") |> filter(month %in% c(5:9)) |>
+  select(UnitCode, month, ppt_norm_1901_2000)
+
+avg_tot_gsppt <- summarize(acad_norm_gsppt, total = sum(ppt_norm_1901_2000))
+
+acad_gsppt <- NETN_clim_annual |> filter(UnitCode == "ACAD") |> filter(month %in% c(5:9)) |>
+  filter(year > 2010) |>
+  filter(year < 2026) |>
+  summarize(tot_gsppt = sum(ppt),
+            tot_gsppt_cm = tot_gsppt/10,
+            .by = c(year)) |>
+  mutate(avg_gsppt_cm = (avg_tot_gsppt$total)/10)
+
+plot_p <-
+ggplot(acad_gsppt, aes(x = year, y = tot_gsppt_cm)) +
+  #geom_bar(stat = 'identity', fill = '#9AC1E3', color = 'dimgrey') +
+  geom_line(color = '#9AC1E3', linewidth = 1) +
+  geom_point(fill = '#9AC1E3', color = 'dimgrey', size = 4, shape = 21) +
+  geom_hline(yintercept = acad_gsppt$avg_gsppt_cm, linetype = 'dashed') +
+  scale_x_continuous(breaks = seq(2011, 2026, 1), limits = c(2011, 2026), expand = c(0.01, 0.01)) +
+  scale_y_continuous(breaks = seq(0, 70, 10), limits = c(0, 70)) +
+  theme_NETN() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) +
+  labs(x = "Growing Season (May - Sept)", y = "Growing season total precip. (cm)")
+
+plot_d <-
+plotClimDrought(park = "ACAD", years = 2011:2025, legend_position = "bottom", x_pad = c(0.01, 0.01))
+
+plot_p / plot_d + plot_layout(axes = "collect_x")
+
+ggsave("./results/total_precip_and_drought_by_year.png", width = 10, height = 8)
