@@ -389,7 +389,7 @@ wet_est <- data.frame(tidy(wetmod_hgm) |> filter(effect == "fixed")) |> select(t
          intercept = ifelse(HGM_Class == "Depression", estimate, estimate + add),
          resp = "mean_wet")
 
-params <- rbind(vmmi_est, meanC_est, tol_est, bryo_est, wet_est)
+params <- rbind(vmmi_est, meanC_est, tol_est |> select(-p.value), bryo_est, wet_est)
 
 pred_plot <- function(param, ylabel, yran = NA, thresh = TRUE){
   ints <- params |> filter(resp == param)
@@ -401,19 +401,19 @@ pred_plot <- function(param, ylabel, yran = NA, thresh = TRUE){
   ggplot(vmmi_pred, aes(x = Year, y = .data[[param]])) +
     theme_wet() +
     {if(thresh == TRUE) annotate(geom = "rect",
-                                 xmin = 2011, xmax = 2026, ymin = 0, ymax = 41.48136,
+                                 xmin = 2010, xmax = 2026, ymin = 0, ymax = 41.48136,
                                  fill = "#CC6666", alpha = 0.5)} +
     {if(thresh == TRUE) annotate(geom = "rect",
-                                 xmin = 2011, xmax = 2026, ymin = 41.48136, ymax = 60.94853,
+                                 xmin = 2010, xmax = 2026, ymin = 41.48136, ymax = 60.94853,
                                  fill = "#FFF394", alpha = 0.5)} +
     {if(thresh == TRUE) annotate(geom = "rect",
-                                 xmin = 2011, xmax = 2026, ymin = 60.94853, ymax = 100,
+                                 xmin = 2010, xmax = 2026, ymin = 60.94853, ymax = 100,
                                  fill = "#88CF89", alpha = 0.5)} +
 
-    geom_point(aes(group = Code), alpha = 0.6, color = '#474747') +
-    geom_line(aes(group = Code), alpha = 0.6, color = '#474747') +
+    geom_point(aes(group = Code), alpha = 0.6, color = '#474747', linewidth = 1, size = 2) +
+    geom_line(aes(group = Code), alpha = 0.6, color = '#474747', linewidth = 1) +
     scale_y_continuous(limits = yrange) +
-    scale_x_continuous(limits = c(2011, 2026), breaks = seq(2011, 2026, 3))+
+    scale_x_continuous(limits = c(2010, 2026), breaks = seq(2011, 2026, 3))+
     geom_abline(data = ints,
                 aes(intercept = intercept, slope = rep(0, 4),
                     group = HGM_Class),
@@ -422,11 +422,19 @@ pred_plot <- function(param, ylabel, yran = NA, thresh = TRUE){
     #guides(color = guide_legend(override.aes = list(alpha = 1))) +
     theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))}
 
-
 pred_plot("vmmi", "Vegetation MMI", yran = c(0, 100)) +
   facet_wrap(~HGM_Class)
-
 # # ggsave("./results/Vegetation_MMI_RAM_facet.png", height = 5, width = 6)
+
+pred_plot("vmmi", "Vegetation MMI", yran = c(0, 100)) +
+  facet_wrap(~HGM_Class) +
+  geom_point(data = vmmi_sen, aes(x = Year, y = vmmi),
+             shape = 25, fill = "dodgerblue2", color = "dodgerblue4", size = 2) +
+  geom_line(data = vmmi_sen, aes(x = Year, y = vmmi, group = Code),
+            color = "dodgerblue2", linewidth = 0.5)
+
+# ggsave("./results/Vegetation_MMI_RAM_facet_plus_sen.png", height = 5, width = 6)
+
 
 pred_plot("meanC", "Mean C", thresh = T) + facet_wrap(~HGM_Class)
 

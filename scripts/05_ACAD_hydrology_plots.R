@@ -345,6 +345,8 @@ if(nrow(prop_complete_check) > 0) {
 return(gs_WL_stats)
 
 }
+wl_sen_noext <- wl_sen |> filter(Date != "2021-06-09")
+wl_sen_nonext_sum <- calc_WL_stats(wl_sen_noext, col_match = "_WL")
 
 wl_stats_comb <- rbind(calc_WL_stats(df = wl_sen, col_match = "_WL") |> mutate(site_type = "SEN"),
                        calc_WL_stats(df = grme_wide, col_match = "GRME_") |> mutate(site_type = "INT")) |>
@@ -488,18 +490,32 @@ szs = c(2, 2, 2.5, 3, 2.5, 2)
 wl_stats2 <- wl_stats_comb2 |> #filter(!site_name %in% c("GRME_02", "GRME_03", "GRME_04", "GRME_05", "GRME_06"))
   filter(!site_name %in% c("GRME_01", "GRME_02", "GRME_03", "GRME_04", "GRME_06"))
 
+# wl_stats_site <- wl_stats_comb2 |>
+#   summarize(med_range = round(median(year_range, na.rm = T), 2),
+#             med_WL = round(median(WL_med, na.rm = T), 2),
+#             med_inc = round(median(max_inc, na.rm = T), 2),
+#             med_max = round(median(WL_max, na.rm = T), 2),
+#             med_min = round(median(WL_min, na.rm = T), 2),
+#             med_GS_chg = round(median(GS_change, na.rm = T), 2),
+#             .by = c("site_name", "HGM_Class")) |>
+#   arrange(med_range)
+
 wl_stats_site <- wl_stats_comb2 |>
   summarize(med_range = round(median(year_range, na.rm = T), 2),
             med_WL = round(median(WL_med, na.rm = T), 2),
-            med_inc = round(median(max_inc, na.rm = T), 2),
-            med_max = round(median(WL_max, na.rm = T), 2),
-            med_min = round(median(WL_min, na.rm = T), 2),
-            med_GS_chg = round(median(GS_change, na.rm = T), 2),
+            med_sd = round(median(WL_sd, na.rm = T), 2),
+            max_inc = round(max(max_inc, na.rm = T), 2),
+            max_wl = round(max(WL_max, na.rm = T), 2),
+            min_wl = round(min(WL_min, na.rm = T), 2),
+            max_GS_chg = round(max(abs(GS_change), na.rm = T), 2),
+            min_GS_chg = round(min(GS_change, na.rm = T), 2),
             .by = c("site_name", "HGM_Class")) |>
   arrange(med_range)
 
+head(wl_stats_comb2)
+
 wl_stats_site
-write.csv(wl_stats_site, "./results/wl_summary_stats.csv", row.names = F)
+write.csv(wl_stats_site, "./results/wl_summary_stats_min_max.csv", row.names = F)
 head(wl_stats2)
 
 ggplot(wl_stats_comb2 |> filter(Year >= 2016) |>
