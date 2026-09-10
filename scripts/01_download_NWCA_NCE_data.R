@@ -19,6 +19,10 @@ library(tidyverse)
 
 #download_path <- "C:/Users/KMMiller/OneDrive - DOI/NETN/R_Dev/ACAD_trend_analysis_code/data/EPA_all/"
 download_path <- "./data/EPA_all/"
+if(!dir.exists("./data/EPA_all")){dir.create("./data/EPA_all/")}
+if(!dir.exists("./data/EPA_nce")){dir.create("./data/EPA_nce/")}
+if(!dir.exists("./data/EPA_taxa_lists")){dir.create("./data/EPA_taxa_lists/")}
+
 
 #--- Read html on website ---
 page_orig <- "https://www.epa.gov/national-aquatic-resource-surveys/data-national-aquatic-resource-surveys"

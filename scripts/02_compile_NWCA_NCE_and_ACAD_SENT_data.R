@@ -10,7 +10,7 @@
 #--- Params ----
 library(tidyverse)
 export_path <- "./data/EPA_compiled/"
-
+if(!dir.exists("./data/EPA_compiled")){dir.create("./data/EPA_compiled/")}
 #--- Combining data across years ----
 # For the following datasets, I'm row binding data across visits by intersecting the columns each dataset has
 # in common to start with. There may be columns in later datasets that need adding, but I'll deal
