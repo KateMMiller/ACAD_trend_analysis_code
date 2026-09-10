@@ -11,6 +11,8 @@ library(sf)
 # Combine RAM data from database and SENT data compiled from EPA NWCA sources
 # NETN RAM data
 
+#+++++ Note that these data contain protected records and are not publicly available.++++
+#+++++ The output data sets from this script are available in the data folder.
 importRAM(type = 'zip',
           filepath = "./data/ACAD_data/NETN_Wetland_RAM_Data_20260608_NPSonly.zip")
 
@@ -135,7 +137,7 @@ vmmi_comb3 <- vmmi_comb2[,names(vmmi_nwca1)]
 
 vmmi_all <- rbind(vmmi_comb3, vmmi_nwca1) |> filter(!site_type %in% "OTH")
 
-write.csv(vmmi_all, "./results/VegetationMMI_NWCA_PROB_ACAD_GRME_most_recent_REF.csv",
+write.csv(vmmi_all, "./data/final/VegetationMMI_NWCA_PROB_ACAD_GRME_most_recent_REF.csv",
           row.names = F)
 
 # Coefficient of Wetness
@@ -187,7 +189,7 @@ vmmi_cow_comb <- left_join(vmmi_comb, cow_comb, by = c("Code", "Year")) |>
                                TRUE ~ "UNK"))
 head(vmmi_cow_comb)
 
-write.csv(vmmi_cow_comb, "./data/ACAD_data/Vegetation_MMI_COW_2011-2025_ACAD_RAM_SENT_GRME.csv", row.names = F)
+write.csv(vmmi_cow_comb, "./data/final/Vegetation_MMI_COW_2011-2025_ACAD_RAM_SENT_GRME.csv", row.names = F)
 vmmi_sf <- st_as_sf(vmmi_cow_comb, coords = c("X", "Y"), crs = 26919)
 st_write(vmmi_sf, "./data/ACAD_data/Vegetation_MMI_COW_2011-2025_ACAD_RAM_SENT_GRME.shp")
 
@@ -325,5 +327,5 @@ stress_all <- stress_all |>
                           grepl("ME-HP310", Code) ~ "FRAZ",
                           TRUE ~ Code))
 
-write.csv(stress_all, "./results/Stressor_Counts_NWCA_PROB_ACAD_GRME_most_recent_REF.csv",
+write.csv(stress_all, "./data/final/Stressor_Counts_NWCA_PROB_ACAD_GRME_most_recent_REF.csv",
           row.names = F)

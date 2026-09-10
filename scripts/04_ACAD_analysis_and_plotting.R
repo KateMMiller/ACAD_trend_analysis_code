@@ -13,7 +13,7 @@ library(wetlandACAD)
 library(vegan)
 
 # All site table of ratings
-vmmi_all <- read.csv("./results/VegetationMMI_NWCA_PROB_ACAD_GRME_most_recent_REF.csv")
+vmmi_all <- read.csv("./data/final/VegetationMMI_NWCA_PROB_ACAD_GRME_most_recent_REF.csv")
 
 vmmi_pct_rat <- vmmi_all |>
   mutate(vmmi_rating_orig = ifelse(vmmi > 65.22746, "Good",
@@ -57,7 +57,7 @@ vmmi_pct_rat_new2 <- vmmi_pct_rat_new |> select(-vmmi_rating) |>
 vmmi_pct_rat_new2
 
 # Split out ACAD sites for analysis and plotting
-vmmi_acad <- read.csv("./data/ACAD_data/Vegetation_MMI_COW_2011-2025_ACAD_RAM_SENT_GRME.csv") |>
+vmmi_acad <- read.csv("./data/final/Vegetation_MMI_COW_2011-2025_ACAD_RAM_SENT_GRME.csv") |>
   mutate(site_type = ifelse(Panel == 0, "SENT", "RAM"))
 table(vmmi_acad$Code, vmmi_acad$HGM_Class)
 
@@ -360,7 +360,6 @@ tol_est_m_wide2 <- tol_est_m2 |>
 tol_ci_trend <- tidy(tolmod_trend, effects = 'fixed', conf.int = T) |> data.frame()
 tol_ci_HGM <- tidy(tolmod_hgm, effects = 'fixed', conf.int = T) |> data.frame()
 
-
 tol_est <- data.frame(tidy(tolmod_hgm) |> filter(effect == "fixed")) |> select(term, estimate, std.error, p.value) |>
   mutate(HGM_Class = ifelse(grepl("HGM_Class", term), gsub("HGM_Class", "", term), "Depression"),
          add = ifelse(HGM_Class == "Depression", 0, .data$estimate[.data$HGM_Class == "Depression"]),
@@ -435,7 +434,6 @@ pred_plot("vmmi", "Vegetation MMI", yran = c(0, 100)) +
 
 # ggsave("./results/Vegetation_MMI_RAM_facet_plus_sen.png", height = 5, width = 6)
 
-
 pred_plot("meanC", "Mean C", thresh = T) + facet_wrap(~HGM_Class)
 
 pred_plot("Cover_Tolerant", "% Cover Tolerant", thresh = F) + facet_wrap(~HGM_Class)
@@ -500,7 +498,7 @@ pred_plot2("Bryophyte_Cover", "% Bryo. Cov")
 
 #----- VMMI distributions among site types -----
 # ACAD sites
-vmmi_acad <- read.csv("./data/ACAD_data/Vegetation_MMI_2011-2025_ACAD_RAM_SENT_GRME.csv") |>
+vmmi_acad <- read.csv("./data/final/Vegetation_MMI_COW_2011-2025_ACAD_RAM_SENT_GRME.csv") |>
   mutate(site_type = case_when(grepl("R-", Code) ~ "ACAD RAM",
                                grepl("GRME0|GRME10", Code) ~ "ACAD GRME",
                                Code %in% c("BIGH", "DUCK", "FRAZ", "GILM", "GRME", "HEBR",
@@ -548,7 +546,7 @@ ggplot(vmmi_comb,
 
 #--- Number of stressors vs VMMI ---
 head(vmmi_comb)
-buff_all <- read.csv("./results/Stressor_Counts_NWCA_PROB_ACAD_GRME_most_recent_REF.csv")
+buff_all <- read.csv("./data/final/Stressor_Counts_NWCA_PROB_ACAD_GRME_most_recent_REF.csv")
 head(buff_all)
 table(buff_all$site_type, useNA = 'always')
 
@@ -574,7 +572,7 @@ vmmi_ref <- vmmi_nwca |>
 names(vmmi_ref)
 names(vmmi_prob21)
 
-vmmi_acad <- read.csv("./data/ACAD_data/Vegetation_MMI_2011-2025_ACAD_RAM_SENT_GRME.csv") |>
+vmmi_acad <- read.csv("./data/final/Vegetation_MMI_COW_2011-2025_ACAD_RAM_SENT_GRME.csv") |>
   filter(!grepl("GIME", Code)) |> # drop Gilmore Meadow intensification
   mutate(site_type = case_when(Panel %in% 1:4 ~ "ACAD RAM",
                                Panel == -1 ~ "ACAD GRME",
@@ -832,6 +830,7 @@ theme_wet <- function(){
 }
 
 # Combine RAM and SEN species data
+# Note that this data set contains protected species and is for internal use only.
 importRAM(export_protected = T, type = 'zip',
   filepath = "./data/ACAD_data/NETN_Wetland_RAM_Data_20260608_NPSonly.zip")
 ram_spp1 <- VIEWS_RAM$species_list
@@ -913,8 +912,14 @@ spp_wide2 <- spp_comb |> arrange(SYMBOL, SiteCode) |>
   arrange(SiteType, SiteCode, YEAR) |>
   data.frame()
 
+# Scrub species name so protected species hidden
+spp_wide_prot <- spp_wide2
+colnames(spp_wide_prot) <- c(names(spp_wide_prot[,1:4]), paste0("SPP", seq(1, ncol(spp_wide_prot)-4)))
+
+write.csv(spp_wide_prot, "./data/final/Species_matrix_for_NMDS_spp_names_scrubbed.csv", row.names = F)
+
 # vmmi and cow for envfit
-vmmi <- read.csv('./data/ACAD_data/Vegetation_MMI_COW_2011-2025_ACAD_RAM_SENT_GRME.csv') |>
+vmmi <- read.csv('./data/final/Vegetation_MMI_COW_2011-2025_ACAD_RAM_SENT_GRME.csv') |>
   filter(site_type %in% c("ACAD RAM", "ACAD Sent.")) |>
   rename(YEAR = Year, SiteCode = Code) |>
   mutate(cycle = case_when(YEAR < 2016 ~ 1,
@@ -922,12 +927,13 @@ vmmi <- read.csv('./data/ACAD_data/Vegetation_MMI_COW_2011-2025_ACAD_RAM_SENT_GR
                            YEAR > 2020 ~ 3))
 
 # Ordination
-nmds2 <- metaMDS(spp_wide2[,6:ncol(spp_wide2)], distance = 'jaccard', k = 2, maxit = 100,
+spp_wide_prot <- read.csv("./data/final/Species_matrix_for_NMDS_spp_names_scrubbed.csv")
+nmds2 <- metaMDS(spp_wide_prot[,5:ncol(spp_wide_prot)], distance = 'jaccard', k = 2, maxit = 100,
                  autotransform = FALSE)
 stressplot(nmds2)
-nmds2 # stress = 0.134
+nmds2 # stress = 0.133
 
-spp_env <- left_join(spp_wide |> select(SiteCode:cycle),
+spp_env <- left_join(spp_wide_prot |> select(SiteCode:cycle),
                      vmmi,
                      by = c("SiteCode", "YEAR", "cycle"))
 
@@ -938,14 +944,14 @@ spp_envfit <- envfit(nmds2, spp_env |> select(MeanC = meanC,
                                               VegMMI = vmmi,
                                               MeanWet = mean_wet,
                                               cycle))
-spp_fit <- envfit(nmds2, spp_wide2[,6:ncol(spp_wide2)])
+spp_fit <- envfit(nmds2, spp_wide_prot[,5:ncol(spp_wide_prot)])
 
 # plot(nmds2, display = 'sites')
 # ordihull(nmds2,
 #          spp_wide$SiteCode, display = 'sites', draw = 'lines')
 
 site_scores1 <- as.data.frame(scores(nmds2, display = 'sites'))
-site_scores2 <- cbind(spp_wide[,1:5], site_scores1) #|>
+site_scores2 <- cbind(spp_wide_prot[,1:4], site_scores1) #|>
 site_scores2$site_lab <- ifelse(site_scores2$SiteCode %in% c("R-13", "R-04", "R-19"), paste0("GRME"),
                           ifelse(site_scores2$SiteCode %in% c("R-31", "GILM"), paste0("GILM"),
                             NA_character_))

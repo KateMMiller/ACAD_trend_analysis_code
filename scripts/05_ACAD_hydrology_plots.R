@@ -20,22 +20,7 @@ theme_wet <- function(){
         axis.ticks = element_line(color = "#696969", linewidth = 0.4))
 }
 
-wl_sen <- read.csv("./data/ACAD_data/well_prec_data_2013-2025.csv")
-wl_sen$year_fac <- as.factor(wl_sen$Year)
-wl_sen <- wl_sen |> mutate(timestamp2 = ifelse(hr == 0,
-                                                 format(as.POSIXct(paste0(timestamp, " 00:00:00"),
-                                                                   format = "%Y-%m-%d %H:%M:%S",
-                                                                   tz = "America/New_York"),
-                                                        "%Y-%m-%d %H:%M:%S"),
-                                                 format(as.POSIXct(timestamp,
-                                                                   format = "%Y-%m-%d %H:%M:%S",
-                                                                   tz = "America/New_York"),
-                                                        "%Y-%m-%d %H:%M:%S")),
-                             Date = as.Date(Date, format = "%Y-%m-%d")) |>
-  select(timestamp = timestamp2, Date:year_fac)
-
-head(wl_sen)
-write.csv(wl_sen, "./data/ACAD_data/SEN_water_level_precip_data_2013-2025.csv", row.names = F)
+wl_sen <- read.csv("./data/final/SEN_water_level_precip_data_2013-2025.csv")
 
 gilm_sum <- wl_sen |> filter(Year >= 2016) |>
   summarize(num_samps = sum(!is.na(GILM_WL)),
@@ -51,28 +36,7 @@ gilm_sum <- wl_sen |> filter(Year >= 2016) |>
 
 head(gilm_sum)
 
-wl_grme1 <- read.csv("./data/ACAD_data/great_meadow_well_data_2025_20260304.csv")
-
-wl_grme <- wl_grme1 |>
-  mutate(year_fac = as.factor(year),
-         Date = as.Date(date, format = "%Y-%m-%d"),
-         timestamp = ifelse(hr == 0,
-                             format(as.POSIXct(paste0(timestamp, " 00:00:00"),
-                                               format = "%Y-%m-%d %H:%M:%S",
-                                               tz = "America/New_York"),
-                                    "%Y-%m-%d %H:%M:%S"),
-                             format(as.POSIXct(timestamp,
-                                               format = "%Y-%m-%d %H:%M:%S",
-                                               tz = "America/New_York"),
-                                    "%Y-%m-%d %H:%M:%S"))) |>
-  select(timestamp, date, doy, Year = year, precip_cm = precip.cm, plot.num,
-         water.depth, lag.precip, hr, doy_h, year_fac)  |>
-  filter(Year >= 2016) |> filter(doy > 134 & doy < 275) |>
-  filter(water.depth <200 & water.depth > -200) |> # some rogue data points in there
-  filter(!(water.depth < -120 & doy == 159 & Year == 2016 & plot.num == 4)) |>
-  filter(!(water.depth < -115 & doy == 215 & Year == 2017 & plot.num == 6))
-
-write.csv(wl_grme, "./data/ACAD_data/GRME_water_level_precip_data_2016-2025.csv", row.names = F)
+wl_grme <- read.csv("./data/final/GRME_water_level_precip_data_2016-2025.csv")
 
 grme_sum <- wl_grme |>
   filter(!(water.depth < -120 & doy == 159 & Year == 2016)) |>
@@ -193,59 +157,14 @@ p_wmtn <- sen_bands(df = wl_sen, y = "WMTN_WL", ptitle = "Western Mtn. Swamp")
 # Riverine
 p_grme1 + p_grme5 + p_gilm + plot_layout(axes = "collect", guides = 'collect') & theme(legend.position = 'bottom')
 p_gilm + p_grme1 + p_grme5 + plot_layout(axes = "collect", guides = 'collect') & theme(legend.position = 'bottom')
-ggsave("./results/Great_1_5_vs_Gilmore_water_level_distributions.png", width = 10, height = 5)
+# ggsave("./results/Great_1_5_vs_Gilmore_water_level_distributions.png", width = 10, height = 5)
 
 p_hebr + p_lihu + p_gilm + plot_layout(axes = "collect", guides = "collect") & theme(legend.position = 'bottom')
 
 # Depression
 p_duck + p_nemi + plot_layout(axes = "collect", guides = "collect") & theme(legend.position = 'bottom')
 
-
 # ggsave("./results/Great_vs_Gilmore_water_level_distributions.png", width = 10, height = 6)
-
-# Add rug for when drought conditions
-# drgt <- getClimDrought(park = "ACAD", years = 2020:2025)
-
-# drgt <- drgt |>
-#  filter(County == "Hancock County") |>
-#  select(DSCI, ValidStart)
-
-# new_drgt <- data.frame(Date = seq.Date(min(drgt$ValidStart), max(drgt$ValidStart), 1))
-
-# new_drgt2 <- left_join(new_drgt, drgt, by = c("Date" = "ValidStart")) |>
-#   mutate(Date = as.Date(Date, format = "%Y-%m-%d"),
-#          month = format(Date, "%d"),
-#          doy = as.numeric(format(Date, "%j")),
-#          year = as.numeric(format(Date, "%Y")),
-#          year_fac = as.factor(year)) |>
-#   fill(DSCI, .direction = 'down') |>
-#   mutate(drgt = ifelse(DSCI > 0, 1, NA_real_)) |>
-#   filter(!is.na(drgt)) |>
-#   filter(doy >= 135 & doy <= 274)
-#
-# wl_sen2 <- left_join(wl_sen, new_drgt2, by = c("doy", "Year" = "year", "year_fac", "Date"))
-# head(wl_sen2)
-
-# facet by year
-# ggplot(wl_sen2 |> filter(Year > 2019) |> droplevels(),
-#        aes(x = doy_h, y = GILM_WL, group = year_fac)) +
-#   geom_line(linewidth = 0.75, aes(color = "Gilmore Meadow")) + theme_wet() +
-#   geom_line(data = wl_grme |> filter(Year > 2019) |> droplevels() |> filter(plot.num == 1),
-#             linewidth = 0.75,
-#             aes(x = doy_h, y = water.depth, group = year_fac, color = "Great Meadow")) +
-#   labs(y = "Water Level (cm)", x = NULL) +
-#   scale_color_manual(values = c("Gilmore Meadow" = "#0A60D1", "Great Meadow" = "#FFBB14")) +
-#   scale_x_continuous(breaks = c(135, 166, 196, 227, 258),
-#                      limits = c(135, 275),
-#                      labels = c("May-15", "Jun-15", "Jul-15", "Aug-15", "Sep-15")) +
-#   geom_hline(yintercept = 0) +
-#   theme(legend.title = element_blank(), legend.position = "bottom") +
-#   geom_rug(data = new_drgt2 |> filter(year > 2019), stat = 'identity',
-#            aes(x = doy, y = drgt, group = year_fac),
-#            color = "dimgrey", linewidth = 1.5) +
-#   facet_wrap(~year_fac, ncol = 2)
-#
-# head(wl_sen2)
 
 # Calc. growing season summary stats
 grme_wide <- wl_grme |>
@@ -359,7 +278,7 @@ wl_stats_comb <- rbind(calc_WL_stats(df = wl_sen, col_match = "_WL") |> mutate(s
 
 head(wl_stats_comb)
 # adding in HGM Class
-vmmi <- read.csv('./data/ACAD_data/Vegetation_MMI_COW_2011-2025_ACAD_RAM_SENT_GRME.csv') |>
+vmmi <- read.csv('./data/final/Vegetation_MMI_COW_2011-2025_ACAD_RAM_SENT_GRME.csv') |>
   filter(site_type %in% c("ACAD RAM", "ACAD Sent.")) |>
   rename(YEAR = Year, SiteCode = Code) |>
   mutate(cycle = case_when(YEAR < 2016 ~ 1,
@@ -555,7 +474,7 @@ ggplot(wl_stats_comb2 |> filter(Year >= 2016) |>
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
 
 
-ggsave("./results/GS_water_level_stats.png", width = 10, height = 6)
+# ggsave("./results/GS_water_level_stats.png", width = 10, height = 6)
 
 #--- growing season precipitation ---
 library(tidyverse)
@@ -594,4 +513,4 @@ plotClimDrought(park = "ACAD", years = 2011:2025, legend_position = "bottom", x_
 
 plot_p / plot_d + plot_layout(axes = "collect_x")
 
-ggsave("./results/total_precip_and_drought_by_year.png", width = 10, height = 8)
+# ggsave("./results/total_precip_and_drought_by_year.png", width = 10, height = 8)

@@ -352,7 +352,7 @@ coc_list2 <- coc_list |>
 coc_list_miss_sym <- coc_list2 |> filter(is.na(SYMBOL)) |> select(SYMBOL, CVal, COC_reg) |>
   distinct()
 
-sppcoc <- left_join(spplist4, coc_list2, by = c("SYMBOL", "COC_reg"))
+sppcoc <- left_join(spplist4, coc_list2, by = c("SYMBOL", "COC_reg"), relationship = 'many-to-many')
 sppcoc_miss <- sppcoc |> filter(is.na(SCIENTIFIC_NAME))
 write.csv(sppcoc_miss, "./data/EPA_taxa_lists/COCs/Species_missing_COCs.csv", row.names = F)
 
@@ -742,7 +742,7 @@ ggplot(plot_vmmi,
   geom_jitter(alpha = 0.2) +
   labs(x = "Site Disturbance Type", y = "Veg. MMI")
 
-ggsave("./results/VMMI_distribution_site_type.png", height = 4, width = 6)
+# ggsave("./results/VMMI_distribution_site_type.png", height = 4, width = 6)
 
 ggplot(plot_vmmi |> filter(HGM_Class %in% c("Depression", "Flats", "Lacustrine", "Riverine", "Slope")),
        aes(x = site_type_fac, y = vmmi)) +
@@ -945,7 +945,7 @@ ggplot(buff_all_long,
   facet_wrap(~loc) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
 
-ggsave("./results/Stressor_boxplots_EPA.png", width = 8, height = 5)
+# ggsave("./results/Stressor_boxplots_EPA.png", width = 8, height = 5)
 
 write.csv(buff_ref, "./data/EPA_compiled/Stressor_Counts_REF_2011-2021.csv", row.names = F)
 write.csv(buff_all |> droplevels(), "./data/EPA_compiled/Stressor_Counts_EPA_all_2011-2021.csv",
