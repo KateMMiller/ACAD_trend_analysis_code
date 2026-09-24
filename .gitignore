@@ -1,0 +1,12 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+/data/ACAD_data/
+/data/EPA_NCE/
+/data/EPA_all/
+/data/EPA_taxa_lists/
+/data/EPA_compiled/
+/scripts/old/
+/results/
+/data/final/species_matrix_for_NMDS.csv
